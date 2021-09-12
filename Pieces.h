@@ -105,10 +105,10 @@ public:
 
 	string GetName() const override
 	{
-		return "Pawn";
+		return "Knight";
 	}
 	PieceType GetType() const override
 	{
-		return PieceType::Pawn;
+		return PieceType::Knight;
 	}
 };

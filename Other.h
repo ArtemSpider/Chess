@@ -24,7 +24,9 @@ enum class PieceType
 	Bishop,
 	Rook,
 	Queen,
-	King
+	King,
+
+	Count = 6 // Must be last
 };
 
 
