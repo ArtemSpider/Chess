@@ -81,6 +81,14 @@ class Game
 					if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
 					{
 						Move(selectedPiece, pos);
+
+						selectedPiece = nullptr;
+						graphics.ResetSelectedPiece();
+					}
+					else
+					{
+						selectedPiece = nullptr;
+						graphics.ResetSelectedPiece();
 					}
 				}
 

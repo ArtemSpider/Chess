@@ -97,9 +97,10 @@ public:
 	{
 		Piece* p = grid[from.y][from.x];
 
-		auto possibleMoves = p->GetMoves();
-
 		p->Move(to);
+
+		grid[from.y][from.x] = nullptr;
+		grid[to.y][to.x] = p;
 
 		PieceMove move;
 
@@ -116,6 +117,7 @@ public:
 
 		moves.push_back(move);
 
+		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
 		UpdatePieces();
 	}
 
