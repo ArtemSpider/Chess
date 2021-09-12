@@ -9,6 +9,8 @@ using namespace std;
 
 struct PieceMove
 {
+	PieceMove() : type(), capture(false), check(false), mate(false), piece(), from(), to() {}
+
 	enum class MoveType
 	{
 		Move,

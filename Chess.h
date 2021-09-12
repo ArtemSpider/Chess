@@ -51,8 +51,13 @@ class Game
 	ChessBoard* board;
 	Graphics graphics;
 
-	PlayerTeam turn;
+	void Move(const Piece* piece, Position to)
+	{
+		selectedPiece = nullptr;
+		board->MovePiece(piece->GetPosition(), to);
+	}
 
+	const Piece* selectedPiece;
 	void Input()
 	{
 		sf::Event event;
@@ -70,12 +75,22 @@ class Game
 
 				pos = Position(pos.x, board->SIZE.y - 1 - pos.y);
 
+				if (selectedPiece != nullptr)
+				{
+					auto possibleMoves = selectedPiece->GetMoves();
+					if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
+					{
+						Move(selectedPiece, pos);
+					}
+				}
+
 				if (board->InBounds(pos) && !board->IsEmpty(pos))
 				{
 					const Piece* p = board->GetPieceAt(pos);
 
-					if (p->GetTeam() == turn)
+					if (p->GetTeam() == board->GetTurn())
 					{
+						selectedPiece = p;
 						graphics.SetSelectedPiece(p);
 					}
 				}
@@ -88,7 +103,7 @@ class Game
 		graphics.Draw();
 	}
 public:
-	Game() : board(CreateBoard()), graphics(board), turn(PlayerTeam::White) {}
+	Game() : board(CreateBoard()), graphics(board) {}
 
 	bool Step()
 	{
