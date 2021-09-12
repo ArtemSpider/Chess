@@ -50,6 +50,7 @@ public:
 
 				if (p != nullptr && p->GetTeam() != GetTeam())
 					possibleMoves.push_back(newPos);
+				visible.push_back(newPos);
 			}
 
 			newPos = Position(+1, dir);
@@ -59,6 +60,7 @@ public:
 
 				if (p != nullptr && p->GetTeam() != GetTeam())
 					possibleMoves.push_back(newPos);
+				visible.push_back(newPos);
 			}
 		}
 
