@@ -15,16 +15,16 @@ class Graphics
 	vector<sf::Sprite> whitePieces; // in the order of PieceType
 	vector<sf::Sprite> blackPieces;
 
-	const Piece* selected;
+	const Piece** selectedPiecePtr;
 public:
 	static const Size SQUARE_SIZE;
 
 	static const sf::Color WHITE_COLOR;
 	static const sf::Color BLACK_COLOR;
 
-	Graphics(const ChessBoard* board) :
+	Graphics(const ChessBoard* board, const Piece** selectedPiece) :
 		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess"),
-		board(board), selected(nullptr)
+		board(board), selectedPiecePtr(selectedPiece)
 	{
 		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
 
@@ -38,15 +38,6 @@ public:
 		for (int i = 0; i < (int)PieceType::Count; i++)
 			blackPieces.emplace_back(piecesTexture,
 				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
-	}
-
-	void SetSelectedPiece(const Piece* p)
-	{
-		selected = p;
-	}
-	void ResetSelectedPiece()
-	{
-		selected = nullptr;
 	}
 
 	sf::RenderWindow& GetWindow()
@@ -80,9 +71,9 @@ public:
 			}
 		}
 
-		if (selected != nullptr)
+		if (*selectedPiecePtr != nullptr)
 		{
-			auto possibleMoves = selected->GetMoves();
+			auto possibleMoves = (*selectedPiecePtr)->GetMoves();
 
 			sf::CircleShape circle(24);
 			circle.setFillColor(sf::Color(0, 0, 0, 64));

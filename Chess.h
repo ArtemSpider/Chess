@@ -17,7 +17,7 @@ class Game
 		for (int j = 0; j < 8; j++)
 		{
 			grid[1][j] = new Pawn({ j, 1 }, PlayerTeam::White, res);
-			grid[6][j] = new Pawn({ j, 1 }, PlayerTeam::Black, res);
+			grid[6][j] = new Pawn({ j, 6 }, PlayerTeam::Black, res);
 		}
 
 		grid[0][0] = new Rook({ 0, 0 }, PlayerTeam::White, res);
@@ -75,21 +75,12 @@ class Game
 
 				pos = Position(pos.x, board->SIZE.y - 1 - pos.y);
 
-				if (selectedPiece != nullptr)
+				if (selectedPiece != nullptr && pos != selectedPiece->GetPosition())
 				{
 					auto possibleMoves = selectedPiece->GetMoves();
 					if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
-					{
 						Move(selectedPiece, pos);
-
-						selectedPiece = nullptr;
-						graphics.ResetSelectedPiece();
-					}
-					else
-					{
-						selectedPiece = nullptr;
-						graphics.ResetSelectedPiece();
-					}
+					selectedPiece = nullptr;
 				}
 
 				if (board->InBounds(pos) && !board->IsEmpty(pos))
@@ -97,10 +88,7 @@ class Game
 					const Piece* p = board->GetPieceAt(pos);
 
 					if (p->GetTeam() == board->GetTurn())
-					{
 						selectedPiece = p;
-						graphics.SetSelectedPiece(p);
-					}
 				}
 			}
 		}
@@ -111,7 +99,7 @@ class Game
 		graphics.Draw();
 	}
 public:
-	Game() : board(CreateBoard()), graphics(board) {}
+	Game() : board(CreateBoard()), graphics(board, &selectedPiece) {}
 
 	bool Step()
 	{

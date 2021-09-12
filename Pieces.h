@@ -43,7 +43,7 @@ public:
 		}
 
 		{
-			Position newPos = Position(-1, dir);
+			Position newPos = pos + Position(-1, dir);
 			if (board->InBounds(newPos))
 			{
 				const Piece* p = board->GetPieceAt(newPos);
@@ -53,7 +53,7 @@ public:
 				visible.push_back(newPos);
 			}
 
-			newPos = Position(+1, dir);
+			newPos = pos + Position(+1, dir);
 			if (board->InBounds(newPos))
 			{
 				const Piece* p = board->GetPieceAt(newPos);
