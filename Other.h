@@ -26,7 +26,7 @@ enum class PieceType
 	Queen,
 	King,
 
-	Count = 6 // Must be last
+	Count // Must be last
 };
 
 
