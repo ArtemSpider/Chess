@@ -97,9 +97,9 @@ public:
 			Position newPos = Position(pos.x + dx[d], pos.y + dy[d]);
 			if (board->InBounds(newPos))
 			{
+				visible.push_back(newPos);
 				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())
 					possibleMoves.push_back(newPos);
-				visible.push_back(newPos);
 			}
 		}
 	}

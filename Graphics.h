@@ -32,12 +32,18 @@ public:
 		const int imageOrder[] = { 5, 3, 2, 4, 1, 0 };
 
 		for (int i = 0; i < (int)PieceType::Count; i++)
+		{
 			whitePieces.emplace_back(piecesTexture,
 				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
+			whitePieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
+		}
 
 		for (int i = 0; i < (int)PieceType::Count; i++)
+		{
 			blackPieces.emplace_back(piecesTexture,
 				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
+			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
+		}
 	}
 
 	sf::RenderWindow& GetWindow()
@@ -64,7 +70,7 @@ public:
 				if (p != nullptr)
 				{
 					sf::Sprite spr = (p->GetTeam() == PlayerTeam::White ? whitePieces : blackPieces)[(size_t)p->GetType()];
-					spr.setPosition(Point<float>(SQUARE_SIZE * Position(j, i)));
+					spr.setPosition(Point<float>(SQUARE_SIZE * Position(j, i) + SQUARE_SIZE / 2));
 
 					window.draw(spr);
 				}

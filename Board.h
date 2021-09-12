@@ -100,6 +100,9 @@ public:
 		p->Move(to);
 
 		grid[from.y][from.x] = nullptr;
+
+		if (grid[to.y][to.x] != nullptr)
+			delete grid[to.y][to.x];
 		grid[to.y][to.x] = p;
 
 		PieceMove move;
