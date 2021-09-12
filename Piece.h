@@ -31,7 +31,7 @@ public:
 	virtual void Update() = 0; // Updates possibleMoves and visible
 
 
-	virtual vector<Position> GetMoves() const = 0
+	virtual vector<Position> GetMoves() const
 	{
 		return possibleMoves;
 	}
