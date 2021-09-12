@@ -48,7 +48,6 @@ public:
 		auto possibleMoves = GetMoves();
 		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
 			pos = newPos;
-		throw "Move is not possible";
 	}
 
 	Position GetPosition() const

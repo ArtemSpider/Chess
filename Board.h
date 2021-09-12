@@ -42,6 +42,8 @@ public:
 					this->grid[i][j] = nullptr;
 				}
 		this->grid = grid;
+
+		UpdatePieces();
 	}
 
 	bool InBounds(Position pos) const
@@ -75,6 +77,22 @@ public:
 		return true;
 	}
 
+	void UpdatePieces()
+	{
+		visibleByWhite.clear();
+		visibleByBlack.clear();
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (grid[i][j] != nullptr)
+				{
+					grid[i][j]->Update();
+
+					auto visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
+					auto visibleByPiece = grid[i][j]->GetVisible();
+					visible.insert(visible.end(), visibleByPiece.begin(), visibleByPiece.end());
+				}
+	}
 	void MovePiece(Position from, Position to)
 	{
 		Piece* p = grid[from.y][from.x];
@@ -97,34 +115,21 @@ public:
 			move.mate = IsMate(OtherTeam(p->GetTeam()));
 
 		moves.push_back(move);
-		
 
-		visibleByWhite.clear();
-		visibleByBlack.clear();
-
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-				if (grid[i][j] != nullptr)
-				{
-					grid[i][j]->Update();
-
-					auto visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
-					auto visibleByPiece = grid[i][j]->GetVisible();
-					visible.insert(visible.end(), visibleByPiece.begin(), visibleByPiece.end());
-				}
+		UpdatePieces();
 	}
 
 	bool IsCheck(PlayerTeam team) const
 	{
 		Piece* king = nullptr;
-		for (int i = 0; i < 8 && king == nullptr; i++)
-			for (int j = 0; j < 8 && king == nullptr; j++)
-				if (!IsEmpty({ i, j }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
+		for (int i = 0; i < SIZE.y && king == nullptr; i++)
+			for (int j = 0; j < SIZE.x && king == nullptr; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
 					king = grid[i][j];
 
-		for (int i = 0; i < 8; i++)
-			for (int j = 0; j < 8; j++)
-				if (!IsEmpty({ i, j }) && grid[i][j]->GetTeam() != team)
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() != team)
 				{
 					auto possibleMoves = grid[i][j]->GetMoves();
 					if (find(possibleMoves.begin(), possibleMoves.end(), king->GetPosition()) != possibleMoves.end())
