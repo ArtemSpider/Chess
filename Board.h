@@ -13,6 +13,9 @@ class ChessBoard
 	vector<PieceMove> moves;
 
 	PlayerTeam curTurn;
+	
+	vector<Position> visibleByWhite;
+	vector<Position> visibleByBlack;
 public:
 	const Size SIZE;
 
@@ -74,15 +77,9 @@ public:
 
 	void MovePiece(Position from, Position to)
 	{
-		if (IsEmpty(from)) throw "There is no piece";
 		Piece* p = grid[from.y][from.x];
 
-		if (p->GetTeam() != curTurn) throw "Wrong turn";
-		if (!IsPossibleMove(p, to)) throw "Impossible move";
-
 		auto possibleMoves = p->GetMoves();
-		if (find(possibleMoves.begin(), possibleMoves.end(), to) == possibleMoves.end())
-			throw "Impossible move";
 
 		p->Move(to);
 
@@ -100,6 +97,21 @@ public:
 			move.mate = IsMate(OtherTeam(p->GetTeam()));
 
 		moves.push_back(move);
+		
+
+		visibleByWhite.clear();
+		visibleByBlack.clear();
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (grid[i][j] != nullptr)
+				{
+					grid[i][j]->Update();
+
+					auto visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
+					auto visibleByPiece = grid[i][j]->GetVisible();
+					visible.insert(visible.end(), visibleByPiece.begin(), visibleByPiece.end());
+				}
 	}
 
 	bool IsCheck(PlayerTeam team) const
@@ -130,5 +142,18 @@ public:
 	PlayerTeam GetTurn() const
 	{
 		return curTurn;
+	}
+
+	const vector<Position>& GetVisibleBy(PlayerTeam team)
+	{
+		return (team == PlayerTeam::White ? visibleByWhite : visibleByBlack);
+	}
+	const vector<Position>& GetVisibleByWhite()
+	{
+		return visibleByWhite;
+	}
+	const vector<Position>& GetVisibleByBlack()
+	{
+		return visibleByBlack;
 	}
 };
