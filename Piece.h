@@ -17,6 +17,9 @@ protected:
 	Position pos;
 
 	PlayerTeam team;
+
+	vector<Position> possibleMoves;
+	vector<Position> visible;
 public:
 	const ChessBoard* board;
 
@@ -24,8 +27,18 @@ public:
 
 	virtual ~Piece() {}
 
-	virtual
-	virtual vector<Position> GetMoves() const = 0;
+
+	virtual void Update() = 0; // Updates possibleMoves and visible
+
+
+	virtual vector<Position> GetMoves() const = 0
+	{
+		return possibleMoves;
+	}
+	virtual vector<Position> GetVisible() const
+	{
+		return visible;
+	}
 
 	virtual string GetName() const = 0;
 	virtual PieceType GetType() const = 0;
