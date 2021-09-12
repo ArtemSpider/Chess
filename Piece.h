@@ -22,6 +22,8 @@ public:
 
 	Piece(Position pos, PlayerTeam team, const ChessBoard* board) : pos(pos), team(team), board(board) {}
 
+	virtual ~Piece() {}
+
 	virtual vector<Position> GetMoves() const = 0;
 
 	virtual string GetName() const = 0;

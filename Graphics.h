@@ -9,59 +9,67 @@ class Graphics
 {
 	sf::Texture piecesTexture;
 
+	sf::RenderWindow window;
+	const ChessBoard* board;
+
 	vector<sf::Sprite> whitePieces; // in the order of PieceType
 	vector<sf::Sprite> blackPieces;
+
+	const Piece* selected;
 public:
 	static const Size SQUARE_SIZE;
 
 	static const sf::Color WHITE_COLOR;
 	static const sf::Color BLACK_COLOR;
 
-	Graphics()
+	Graphics(const ChessBoard* board) :
+		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess"),
+		board(board), selected(nullptr)
 	{
 		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
 
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(5 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(3 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(2 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(4 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(1 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		whitePieces.emplace_back(piecesTexture,
-			sf::IntRect(0 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
 
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(5 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(3 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(2 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(4 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(1 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-		blackPieces.emplace_back(piecesTexture,
-			sf::IntRect(0 * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
+		const int imageOrder[] = { 5, 3, 2, 4, 1, 0 };
+
+		for (int i = 0; i < (int)PieceType::Count; i++)
+			whitePieces.emplace_back(piecesTexture,
+				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
+
+		for (int i = 0; i < (int)PieceType::Count; i++)
+			blackPieces.emplace_back(piecesTexture,
+				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
 	}
 
-	void Draw(sf::RenderWindow& window, const ChessBoard& board)
+	void SetSelectedPiece(const Piece* p)
 	{
-		for (int i = 0; i < board.SIZE.y; i++)
+		selected = p;
+	}
+	void ResetSelectedPiece()
+	{
+		selected = nullptr;
+	}
+
+	sf::RenderWindow& GetWindow()
+	{
+		return window;
+	}
+
+	void Draw()
+	{
+		window.clear();
+
+		sf::RectangleShape sq(Point<float>(SQUARE_SIZE).AsVector2());
+		for (int i = 0; i < board->SIZE.y; i++)
 		{
-			for (int j = 0; j < board.SIZE.x; j++)
+			for (int j = 0; j < board->SIZE.x; j++)
 			{
-				sf::RectangleShape sq(Point<float>(SQUARE_SIZE).AsVector2());
 				sq.setFillColor((i + j) % 2 ? BLACK_COLOR : WHITE_COLOR);
 				sq.setPosition(Point<float>(SQUARE_SIZE * Position(j, i)));
 
 				window.draw(sq);
-				
 
-				const Piece* p = board.GetPieceAt({ j, board.SIZE.y - 1 - i });
+
+				const Piece* p = board->GetPieceAt({ j, board->SIZE.y - 1 - i });
 				if (p != nullptr)
 				{
 					sf::Sprite spr = (p->GetTeam() == PlayerTeam::White ? whitePieces : blackPieces)[(size_t)p->GetType()];
@@ -71,6 +79,22 @@ public:
 				}
 			}
 		}
+
+		if (selected != nullptr)
+		{
+			auto possibleMoves = selected->GetMoves();
+
+			sf::CircleShape circle(24);
+			circle.setFillColor(sf::Color(0, 0, 0, 64));
+			circle.setOrigin(Point<float>(24));
+			for (auto& pos : possibleMoves)
+			{
+				circle.setPosition(Point<float>(SQUARE_SIZE * Position(pos.x, board->SIZE.y - 1 - pos.y) + SQUARE_SIZE / 2));
+				window.draw(circle);
+			}
+		}
+
+		window.display();
 	}
 };
 

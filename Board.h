@@ -17,13 +17,27 @@ public:
 	const Size SIZE;
 
 	ChessBoard(Size size) : SIZE(size), grid(size.y, vector<Piece*>(size.x, nullptr)), moves(), curTurn(PlayerTeam::White) {}
+	
+	~ChessBoard()
+	{
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (this->grid[i][j] != nullptr)
+				{
+					delete this->grid[i][j];
+					this->grid[i][j] = nullptr;
+				}
+	}
 
 	void InitGrid(vector<vector<Piece*> > grid)
 	{
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
 				if (this->grid[i][j] != nullptr)
+				{
 					delete this->grid[i][j];
+					this->grid[i][j] = nullptr;
+				}
 		this->grid = grid;
 	}
 

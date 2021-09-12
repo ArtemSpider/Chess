@@ -150,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Board.h" />
+    <ClInclude Include="Chess.h" />
     <ClInclude Include="Coords.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Other.h" />
