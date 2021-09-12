@@ -14,12 +14,17 @@ class ChessBoard
 
 	PlayerTeam curTurn;
 	
-	vector<Position> visibleByWhite;
-	vector<Position> visibleByBlack;
+	vector<vector<bool> > visibleByWhite;
+	vector<vector<bool> > visibleByBlack;
 public:
 	const Size SIZE;
 
-	ChessBoard(Size size) : SIZE(size), grid(size.y, vector<Piece*>(size.x, nullptr)), moves(), curTurn(PlayerTeam::White) {}
+	ChessBoard(Size size) 
+		: SIZE(size), 
+		grid(size.y, vector<Piece*>(size.x, nullptr)),
+		visibleByWhite(size.y, vector<bool>(size.x, false)),
+		visibleByBlack(size.y, vector<bool>(size.x, false)),
+		moves(), curTurn(PlayerTeam::White) {}
 	
 	~ChessBoard()
 	{
@@ -79,8 +84,12 @@ public:
 
 	void UpdatePieces()
 	{
-		visibleByWhite.clear();
-		visibleByBlack.clear();
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+			{
+				visibleByWhite[i][j] = false;
+				visibleByBlack[i][j] = false;
+			}
 
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
@@ -90,7 +99,9 @@ public:
 
 					auto visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
 					auto visibleByPiece = grid[i][j]->GetVisible();
-					visible.insert(visible.end(), visibleByPiece.begin(), visibleByPiece.end());
+
+					for (auto& p : visibleByPiece)
+						visible[p.y][p.x] = true;
 				}
 	}
 	void MovePiece(Position from, Position to)
@@ -132,19 +143,29 @@ public:
 				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
 					king = grid[i][j];
 
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() != team)
-				{
-					auto possibleMoves = grid[i][j]->GetMoves();
-					if (find(possibleMoves.begin(), possibleMoves.end(), king->GetPosition()) != possibleMoves.end())
-						return true;
-				}
-		return false;
+		if (king == nullptr)
+			throw "King not found";
+
+		return GetVisibleBy(OtherTeam(team))[king->GetPosition().y][king->GetPosition().x];
 	}
 	bool IsMate(PlayerTeam team) const // TODO
 	{
 		if (!IsCheck(team)) return false;
+
+		if (curTurn != team) return true;
+
+
+		Piece* king = nullptr;
+		for (int i = 0; i < SIZE.y && king == nullptr; i++)
+			for (int j = 0; j < SIZE.x && king == nullptr; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
+					king = grid[i][j];
+
+		if (king == nullptr)
+			throw "King not found";
+
+
+
 		return false;
 	}
 
@@ -154,15 +175,16 @@ public:
 		return curTurn;
 	}
 
-	const vector<Position>& GetVisibleBy(PlayerTeam team)
+
+	const vector<vector<bool> >& GetVisibleBy(PlayerTeam team) const
 	{
 		return (team == PlayerTeam::White ? visibleByWhite : visibleByBlack);
 	}
-	const vector<Position>& GetVisibleByWhite()
+	const vector<vector<bool> >& GetVisibleByWhite() const
 	{
 		return visibleByWhite;
 	}
-	const vector<Position>& GetVisibleByBlack()
+	const vector<vector<bool> >& GetVisibleByBlack() const
 	{
 		return visibleByBlack;
 	}
