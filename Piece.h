@@ -24,6 +24,7 @@ public:
 
 	virtual ~Piece() {}
 
+	virtual
 	virtual vector<Position> GetMoves() const = 0;
 
 	virtual string GetName() const = 0;

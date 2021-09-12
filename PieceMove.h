@@ -7,9 +7,8 @@
 
 using namespace std;
 
-class PieceMove
+struct PieceMove
 {
-public:
 	enum class MoveType
 	{
 		Move,

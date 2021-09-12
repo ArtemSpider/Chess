@@ -289,6 +289,9 @@ public:
 
 class King : public Piece
 {
+public:
+	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
+
 	vector<Position> GetMoves() const override
 	{
 		vector<Position> res;
@@ -309,8 +312,6 @@ class King : public Piece
 		return res;
 	}
 
-
-
 	string GetName() const override
 	{
 		return "King";
@@ -323,6 +324,7 @@ class King : public Piece
 
 class Queen : public Piece
 {
+public:
 	Queen(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
 	vector<Position> GetMoves() const override
