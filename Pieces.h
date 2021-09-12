@@ -11,9 +11,10 @@ class Pawn : public Piece
 public:
 	Pawn(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
+		possibleMoves.clear();
+		visible.clear();
 
 		bool firstMove = false;
 		int dir;
@@ -32,13 +33,13 @@ public:
 		{
 			Position newPos = pos + Position(0, 2 * dir);
 			if (board->InBounds(newPos) && board->IsEmpty(pos + Position(0, dir)) && board->IsEmpty(newPos))
-				res.push_back(newPos);
+				possibleMoves.push_back(newPos);
 		}
 
 		{
 			Position newPos = pos + Position(0, dir);
 			if (board->InBounds(newPos) && board->IsEmpty(newPos))
-				res.push_back(newPos);
+				possibleMoves.push_back(newPos);
 		}
 
 		{
@@ -48,7 +49,7 @@ public:
 				const Piece* p = board->GetPieceAt(newPos);
 
 				if (p != nullptr && p->GetTeam() != GetTeam())
-					res.push_back(newPos);
+					possibleMoves.push_back(newPos);
 			}
 
 			newPos = Position(+1, dir);
@@ -57,15 +58,13 @@ public:
 				const Piece* p = board->GetPieceAt(newPos);
 
 				if (p != nullptr && p->GetTeam() != GetTeam())
-					res.push_back(newPos);
+					possibleMoves.push_back(newPos);
 			}
 		}
 
 		{
 			// TODO: en passant
 		}
-
-		return res;
 	}
 
 	string GetName() const override
@@ -83,9 +82,10 @@ class Knight : public Piece
 public:
 	Knight(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
+		possibleMoves.clear();
+		visible.clear();
 
 		const int dx[] = { 1, 2, 2, 1, -1, -2, -2, -1 };
 		const int dy[] = { -2, -1, 1, 2, 2, 1, -1, -2 };
@@ -96,11 +96,10 @@ public:
 			if (board->InBounds(newPos))
 			{
 				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())
-					res.push_back(newPos);
+					possibleMoves.push_back(newPos);
+				visible.push_back(newPos);
 			}
 		}
-
-		return res;
 	}
 
 	string GetName() const override
@@ -118,10 +117,10 @@ class Bishop : public Piece
 public:
 	Bishop(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
-
+		possibleMoves.clear();
+		visible.clear();
 		for (int i = 0;; i++)
 		{
 			Position newPos = pos + Position(i, i);
@@ -130,67 +129,89 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(-i, -j);
+			Position newPos = pos + Position(-i, -i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(-i, j);
+			Position newPos = pos + Position(-i, i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(i, -j);
+			Position newPos = pos + Position(i, -i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
-
-		return res;
 	}
 
 	string GetName() const override
@@ -210,11 +231,12 @@ public:
 
 	Rook(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board), moved(false) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
+		possibleMoves.clear();
+		visible.clear();
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0;; i++)
 		{
 			Position newPos = pos + Position(i, 0);
 
@@ -222,14 +244,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
 				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
+				}
 			}
+			else
+				break;
 		}
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0;; i++)
 		{
 			Position newPos = pos + Position(-i, 0);
 
@@ -237,14 +267,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
 				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
+				}
 			}
+			else
+				break;
 		}
 
-		for (int j = 0; j < 8; j++)
+		for (int j = 0;; j++)
 		{
 			Position newPos = pos + Position(0, j);
 
@@ -252,14 +290,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
 				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
+				}
 			}
+			else
+				break;
 		}
 
-		for (int j = 0; j < 8; j++)
+		for (int j = 0;; j++)
 		{
 			Position newPos = pos + Position(0, -j);
 
@@ -267,14 +313,20 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
 				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
+				}
 			}
+			else
+				break;
 		}
-
-		return res;
 	}
 
 	string GetName() const override
@@ -292,9 +344,10 @@ class King : public Piece
 public:
 	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
+		possibleMoves.clear();
+		visible.clear();
 
 		const int dx[] = { 1, 1, -1, -1, 1, 0, -1, 0 };
 		const int dy[] = { 1, -1, 1, -1, 0, 1, 0, -1 };
@@ -304,12 +357,11 @@ public:
 			Position newPos = pos + Position(dx[d], dy[d]);
 			if (board->InBounds(newPos))
 			{
-				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())
-					res.push_back(newPos);
+				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())				
+					possibleMoves.push_back(newPos);				
+				visible.push_back(newPos);
 			}
 		}
-
-		return res;
 	}
 
 	string GetName() const override
@@ -327,79 +379,104 @@ class Queen : public Piece
 public:
 	Queen(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
-	vector<Position> GetMoves() const override
+	void Update() override
 	{
-		vector<Position> res;
+		possibleMoves.clear();
+		visible.clear();
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(i, j);
+			Position newPos = pos + Position(i, i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(-i, -j);
+			Position newPos = pos + Position(-i, -i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(-i, j);
+			Position newPos = pos + Position(-i, i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0, j = 0; i < 8 && j < 8; i++, j++)
+		for (int i = 0;; i++)
 		{
-			Position newPos = pos + Position(i, -j);
+			Position newPos = pos + Position(i, -i);
 
 			if (board->InBounds(newPos))
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0;; i++)
 		{
 			Position newPos = pos + Position(i, 0);
 
@@ -407,16 +484,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0;; i++)
 		{
 			Position newPos = pos + Position(-i, 0);
 
@@ -424,16 +507,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int j = 0; j < 8; j++)
+		for (int j = 0;; j++)
 		{
 			Position newPos = pos + Position(0, +j);
 
@@ -441,16 +530,22 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
 
-		for (int j = 0; j < 8; j++)
+		for (int j = 0;; j++)
 		{
 			Position newPos = pos + Position(0, -j);
 
@@ -458,16 +553,20 @@ public:
 			{
 				if (!board->IsEmpty(newPos))
 				{
+					visible.push_back(newPos);
 					if (board->GetTeam(newPos) != GetTeam())
-						res.push_back(newPos);
+						possibleMoves.push_back(newPos);
 					break;
+				}
+				else
+				{
+					visible.push_back(newPos);
+					possibleMoves.push_back(newPos);
 				}
 			}
 			else
 				break;
 		}
-
-		return res;
 	}
 
 	string GetName() const override
