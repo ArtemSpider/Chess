@@ -64,9 +64,7 @@ public:
 			}
 		}
 
-		{
-			// TODO: en passant
-		}
+		// en passant in ChessBoard
 	}
 
 	string GetName() const override
@@ -210,6 +208,8 @@ public:
 
 		for (int j = 1;; j++)
 			if (!CheckAndPush(pos + Position(0, -j))) break;
+
+		// castle in ChessBoard
 	}
 
 	string GetName() const override
@@ -253,6 +253,8 @@ public:
 				visible.push_back(newPos);
 			}
 		}
+
+		// castle in ChessBoard
 	}
 
 	string GetName() const override

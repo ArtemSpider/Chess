@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <cassert>
 
 #include "Coords.h"
 #include "Other.h"
@@ -112,6 +113,55 @@ class ChessBoard
 					}
 				}
 			}
+
+		// en passant
+		if (!moves.empty())
+		{
+			auto lastMove = moves.back();
+			if (lastMove.piece == PieceType::Pawn && 
+				lastMove.type == PieceMove::MoveType::Move &&
+				abs(lastMove.to.y - lastMove.from.y) == 2)
+			{
+				Position pos = lastMove.to;
+				pos.x -= 1;
+
+				if (InBounds(pos))
+				{
+					const Piece* p = GetPieceAt(pos);
+					if (p != nullptr && p->GetType() == PieceType::Pawn && p->GetTeam() == curTurn)
+					{
+						Position newPos(lastMove.from.x, (lastMove.from.y + lastMove.to.y) / 2);
+
+						auto r = TestMove(p->GetPosition(), newPos);
+
+						if (!IsCheck())
+							legalMoves[(Piece*)p].push_back(newPos);
+
+						ReverseTestMove(r);
+					}
+				}
+
+
+				pos = lastMove.to;
+				pos.x += 1;
+
+				if (InBounds(pos))
+				{
+					const Piece* p = GetPieceAt(pos);
+					if (p != nullptr && p->GetType() == PieceType::Pawn && p->GetTeam() == curTurn)
+					{
+						Position newPos(lastMove.from.x, (lastMove.from.y + lastMove.to.y) / 2);
+
+						auto r = TestMove(p->GetPosition(), newPos);
+
+						if (!IsCheck())
+							legalMoves[(Piece*)p].push_back(newPos);
+
+						ReverseTestMove(r);
+					}
+				}
+			}
+		}
 	}
 public:
 	const Size SIZE;
@@ -213,34 +263,48 @@ public:
 
 		grid[from.y][from.x] = nullptr;
 
+		bool capture = false;
+
+		// en passant
+		if (p->GetType() == PieceType::Pawn && from.x != to.x && grid[to.y][to.x] == nullptr)
+		{
+			assert(grid[from.y][to.x] != nullptr);
+
+			capture = true;
+			delete grid[from.y][to.x];
+			grid[from.y][to.x] = nullptr;
+		}
+
 		if (grid[to.y][to.x] != nullptr)
+		{
+			capture = true;
 			delete grid[to.y][to.x];
+			grid[to.y][to.x] = nullptr;
+		}
 		grid[to.y][to.x] = p;
 
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
-		Update();
+		UpdatePieces();
 
 
-		PieceMove move;
+		moves.emplace_back();
 
-		move.from = from;
-		move.to = to;
-		move.piece = p->GetType();
+		moves.back().from = from;
+		moves.back().to = to;
+		moves.back().piece = p->GetType();
 
-		if (!IsEmpty(to))
-			move.capture = true;
+		moves.back().capture = capture;
 
-		move.check = IsCheck();
+		UpdateLegalMoves();
 
-		if (move.check)
-			move.mate = IsMate();
+		moves.back().check = IsCheck();
+		if (moves.back().check)
+			moves.back().mate = IsMate();
 
-		if (move.check)
+		if (moves.back().check)
 			cerr << "Check" << endl;
-		if (move.mate)
+		if (moves.back().mate)
 			cerr << "Mate" << endl;
-
-		moves.push_back(move);
 	}
 
 	bool IsCheck() const
