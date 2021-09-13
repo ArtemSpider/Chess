@@ -190,12 +190,8 @@ public:
 
 	void Move(Position newPos)
 	{
-		auto possibleMoves = GetMoves();
-		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
-		{
-			pos = newPos;
-			moved = true;
-		}
+		pos = newPos;
+		moved = true;
 	}
 
 	void Update() override
@@ -235,12 +231,8 @@ public:
 
 	void Move(Position newPos)
 	{
-		auto possibleMoves = GetMoves();
-		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
-		{
-			pos = newPos;
-			moved = true;
-		}
+		pos = newPos;
+		moved = true;
 	}
 
 	void Update() override

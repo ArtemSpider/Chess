@@ -45,9 +45,7 @@ public:
 
 	virtual void Move(Position newPos)
 	{
-		auto possibleMoves = GetMoves();
-		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
-			pos = newPos;
+		pos = newPos;
 	}
 
 	Position GetPosition() const

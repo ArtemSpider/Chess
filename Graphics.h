@@ -79,7 +79,7 @@ public:
 
 		if (*selectedPiecePtr != nullptr)
 		{
-			auto possibleMoves = (*selectedPiecePtr)->GetMoves();
+			auto possibleMoves = board->GetLegalMoves(*selectedPiecePtr);
 
 			sf::CircleShape circle(24);
 			circle.setFillColor(sf::Color(0, 0, 0, 64));

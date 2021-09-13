@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include "Coords.h"
 #include "Other.h"
 #include "PieceMove.h"
@@ -16,6 +18,101 @@ class ChessBoard
 	
 	vector<vector<bool> > visibleByWhite;
 	vector<vector<bool> > visibleByBlack;
+
+
+	struct TestMoveData
+	{
+		Position from;
+		Position to;
+
+		Piece* removedPiece;
+
+		TestMoveData()
+			: from(), to(), removedPiece(nullptr)
+		{}
+		TestMoveData(Position from, Position to, Piece* removedPiece)
+			: from(from), to(to), removedPiece(removedPiece)
+		{}
+	};
+	TestMoveData TestMove(Position from, Position to)
+	{
+		Piece* p = grid[from.y][from.x];
+
+		p->Move(to);
+
+		grid[from.y][from.x] = nullptr;
+
+		TestMoveData data(from, to, grid[to.y][to.x]);
+		grid[to.y][to.x] = p;
+
+		UpdatePieces();
+
+		return data;
+	}
+	void ReverseTestMove(TestMoveData data)
+	{
+		grid[data.from.y][data.from.x] = grid[data.to.y][data.to.x];
+		grid[data.to.y][data.to.x] = data.removedPiece;
+
+		grid[data.from.y][data.from.x]->Move(data.from);
+
+		UpdatePieces();
+	}
+
+
+	void UpdatePieces()
+	{
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+			{
+				visibleByWhite[i][j] = false;
+				visibleByBlack[i][j] = false;
+			}
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (grid[i][j] != nullptr)
+				{
+					grid[i][j]->Update();
+
+					auto& visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
+					auto visibleByPiece = grid[i][j]->GetVisible();
+
+					for (auto& p : visibleByPiece)
+						visible[p.y][p.x] = true;
+				}
+	}
+
+	map<Piece*, vector<Position> > legalMoves;
+	void UpdateLegalMoves()
+	{
+		legalMoves.clear();
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
+					legalMoves[grid[i][j]] = {};
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+			{
+				Piece* p = grid[i][j];
+				if (p != nullptr && p->GetTeam() == curTurn)
+				{
+					auto moves = p->GetMoves();
+
+					for (auto& m : moves)
+					{
+						auto r = TestMove(p->GetPosition(), m);
+
+						if (!IsCheck())
+							legalMoves[p].push_back(m);
+
+						ReverseTestMove(r);
+					}
+				}
+			}
+	}
 public:
 	const Size SIZE;
 
@@ -48,7 +145,7 @@ public:
 				}
 		this->grid = grid;
 
-		UpdatePieces();
+		Update();
 	}
 
 	bool InBounds(Position pos) const
@@ -82,28 +179,32 @@ public:
 		return true;
 	}
 
-	void UpdatePieces()
+	void Update()
 	{
+		UpdatePieces();
+		UpdateLegalMoves();
+		/*
+		cerr << "By white: " << endl;
 		for (int i = 0; i < SIZE.y; i++)
+		{
 			for (int j = 0; j < SIZE.x; j++)
-			{
-				visibleByWhite[i][j] = false;
-				visibleByBlack[i][j] = false;
-			}
+				cerr << visibleByWhite[SIZE.y - 1 - i][j];
+			cerr << endl;
+		}
+		cerr << endl;
 
+		cerr << "By black: " << endl;
 		for (int i = 0; i < SIZE.y; i++)
+		{
 			for (int j = 0; j < SIZE.x; j++)
-				if (grid[i][j] != nullptr)
-				{
-					grid[i][j]->Update();
+				cerr << visibleByBlack[SIZE.y - 1 - i][j];
+			cerr << endl;
+		}
 
-					auto visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
-					auto visibleByPiece = grid[i][j]->GetVisible();
-
-					for (auto& p : visibleByPiece)
-						visible[p.y][p.x] = true;
-				}
+		cerr << endl;
+		cerr << endl;*/
 	}
+
 	void MovePiece(Position from, Position to)
 	{
 		Piece* p = grid[from.y][from.x];
@@ -116,6 +217,10 @@ public:
 			delete grid[to.y][to.x];
 		grid[to.y][to.x] = p;
 
+		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
+		Update();
+
+
 		PieceMove move;
 
 		move.from = from;
@@ -125,48 +230,51 @@ public:
 		if (!IsEmpty(to))
 			move.capture = true;
 
-		move.check = IsCheck(OtherTeam(p->GetTeam()));
+		move.check = IsCheck();
+
 		if (move.check)
-			move.mate = IsMate(OtherTeam(p->GetTeam()));
+			move.mate = IsMate();
+
+		if (move.check)
+			cerr << "Check" << endl;
+		if (move.mate)
+			cerr << "Mate" << endl;
 
 		moves.push_back(move);
-
-		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
-		UpdatePieces();
 	}
 
-	bool IsCheck(PlayerTeam team) const
+	bool IsCheck() const
 	{
 		Piece* king = nullptr;
 		for (int i = 0; i < SIZE.y && king == nullptr; i++)
 			for (int j = 0; j < SIZE.x && king == nullptr; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn && grid[i][j]->GetType() == PieceType::King)
 					king = grid[i][j];
 
 		if (king == nullptr)
 			throw "King not found";
 
-		return GetVisibleBy(OtherTeam(team))[king->GetPosition().y][king->GetPosition().x];
+		return GetVisibleBy(OtherTeam(curTurn), king->GetPosition());
 	}
-	bool IsMate(PlayerTeam team) const // TODO
+	bool IsMate() const
 	{
-		if (!IsCheck(team)) return false;
+		for (auto& p : legalMoves)
+			if (!p.second.empty())
+				return false;
+		return true;
+	}
 
-		if (curTurn != team) return true;
-
-
-		Piece* king = nullptr;
-		for (int i = 0; i < SIZE.y && king == nullptr; i++)
-			for (int j = 0; j < SIZE.x && king == nullptr; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == team && grid[i][j]->GetType() == PieceType::King)
-					king = grid[i][j];
-
-		if (king == nullptr)
-			throw "King not found";
-
-
-
-		return false;
+	const map<Piece*, vector<Position> >& GetLegalMoves() const
+	{
+		return legalMoves;
+	}
+	const vector<Position>& GetLegalMoves(Piece* p) const
+	{
+		return legalMoves.at(p);
+	}
+	const vector<Position>& GetLegalMoves(const Piece* p) const
+	{
+		return legalMoves.at((Piece*)p);
 	}
 
 
@@ -187,5 +295,27 @@ public:
 	const vector<vector<bool> >& GetVisibleByBlack() const
 	{
 		return visibleByBlack;
+	}
+
+	bool GetVisibleBy(PlayerTeam team, Position pos) const
+	{
+		return (team == PlayerTeam::White ? visibleByWhite : visibleByBlack)[pos.y][pos.x];
+	}
+	bool GetVisibleByWhite(Position pos) const
+	{
+		return visibleByWhite[pos.y][pos.x];
+	}
+	bool GetVisibleByBlack(Position pos) const
+	{
+		return visibleByBlack[pos.y][pos.x];
+	}
+
+	const vector<PieceMove>& GetMovesRecord() const
+	{
+		return moves;
+	}
+	const PieceMove GetLastMove() const
+	{
+		return moves.back();
 	}
 };

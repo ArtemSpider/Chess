@@ -77,7 +77,7 @@ class Game
 
 				if (selectedPiece != nullptr && pos != selectedPiece->GetPosition())
 				{
-					auto possibleMoves = selectedPiece->GetMoves();
+					auto possibleMoves = board->GetLegalMoves(selectedPiece);
 					if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
 						Move(selectedPiece, pos);
 					selectedPiece = nullptr;
