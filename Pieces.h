@@ -188,6 +188,16 @@ public:
 
 	Rook(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board), moved(false) {}
 
+	void Move(Position newPos)
+	{
+		auto possibleMoves = GetMoves();
+		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
+		{
+			pos = newPos;
+			moved = true;
+		}
+	}
+
 	void Update() override
 	{
 		possibleMoves.clear();
@@ -219,7 +229,19 @@ public:
 class King : public Piece
 {
 public:
-	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
+	bool moved;
+
+	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board), moved(false) {}
+
+	void Move(Position newPos)
+	{
+		auto possibleMoves = GetMoves();
+		if (find(possibleMoves.begin(), possibleMoves.end(), newPos) != possibleMoves.end())
+		{
+			pos = newPos;
+			moved = true;
+		}
+	}
 
 	void Update() override
 	{
