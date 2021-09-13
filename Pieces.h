@@ -182,15 +182,7 @@ class Rook : public Piece
 		return true;
 	};
 public:
-	bool moved;
-
-	Rook(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board), moved(false) {}
-
-	void Move(Position newPos)
-	{
-		pos = newPos;
-		moved = true;
-	}
+	Rook(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
 	void Update() override
 	{
@@ -225,15 +217,7 @@ public:
 class King : public Piece
 {
 public:
-	bool moved;
-
-	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board), moved(false) {}
-
-	void Move(Position newPos)
-	{
-		pos = newPos;
-		moved = true;
-	}
+	King(Position pos, PlayerTeam team, const ChessBoard* board) : Piece(pos, team, board) {}
 
 	void Update() override
 	{

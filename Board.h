@@ -39,7 +39,7 @@ class ChessBoard
 	{
 		Piece* p = grid[from.y][from.x];
 
-		p->Move(to);
+		p->TestMove(to);
 
 		grid[from.y][from.x] = nullptr;
 
@@ -55,7 +55,7 @@ class ChessBoard
 		grid[data.from.y][data.from.x] = grid[data.to.y][data.to.x];
 		grid[data.to.y][data.to.x] = data.removedPiece;
 
-		grid[data.from.y][data.from.x]->Move(data.from);
+		grid[data.from.y][data.from.x]->TestMove(data.from);
 
 		UpdatePieces();
 	}
@@ -85,40 +85,12 @@ class ChessBoard
 	}
 
 	map<Piece*, vector<Position> > legalMoves;
-	void UpdateLegalMoves()
+	void AddEnPassant()
 	{
-		legalMoves.clear();
-
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
-					legalMoves[grid[i][j]] = {};
-
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-			{
-				Piece* p = grid[i][j];
-				if (p != nullptr && p->GetTeam() == curTurn)
-				{
-					auto moves = p->GetMoves();
-
-					for (auto& m : moves)
-					{
-						auto r = TestMove(p->GetPosition(), m);
-
-						if (!IsCheck())
-							legalMoves[p].push_back(m);
-
-						ReverseTestMove(r);
-					}
-				}
-			}
-
-		// en passant
 		if (!moves.empty())
 		{
 			auto lastMove = moves.back();
-			if (lastMove.piece == PieceType::Pawn && 
+			if (lastMove.piece == PieceType::Pawn &&
 				lastMove.type == PieceMove::MoveType::Move &&
 				abs(lastMove.to.y - lastMove.from.y) == 2)
 			{
@@ -162,6 +134,135 @@ class ChessBoard
 				}
 			}
 		}
+	}
+	void AddCastles()
+	{
+		Piece* king = nullptr;
+		Piece* leftRook = nullptr;
+		Piece* rightRook = nullptr;
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
+				{
+					if (grid[i][j]->GetType() == PieceType::King)
+						king = grid[i][j];
+
+					if (grid[i][j]->GetType() == PieceType::Rook)
+						(leftRook == nullptr ? leftRook : rightRook) = grid[i][j];
+				}
+
+		if (king == nullptr)
+			throw "King not found";
+
+		if (king->HasMoved())
+			return;
+
+		if (leftRook == nullptr && rightRook == nullptr)
+			return;
+
+		if (leftRook->GetPosition().x > king->GetPosition().x)
+			swap(leftRook, rightRook);
+
+		if (leftRook != nullptr && !leftRook->HasMoved()) // long castle
+		{
+			if (king->GetPosition().y != leftRook->GetPosition().y || king->GetPosition().x < leftRook->GetPosition().x)
+				throw "Weird shit";
+
+			Position pos = king->GetPosition();
+			pos.x--;
+
+			bool canCastle = true;
+			for (; canCastle; pos.x--)
+			{
+				if (grid[pos.y][pos.x] == leftRook)
+					break;
+
+				if (grid[pos.y][pos.x] != nullptr)
+				{
+					canCastle = false;
+					break;
+				}
+			}
+
+			if (canCastle)
+			{
+				auto r1 = TestMove(king->GetPosition(), Position(king->GetPosition().x - 2, king->GetPosition().y));
+				auto r2 = TestMove(leftRook->GetPosition(), Position(king->GetPosition().x + 1, king->GetPosition().y));
+
+				if (!IsCheck())
+					legalMoves[king].push_back(king->GetPosition());
+
+				ReverseTestMove(r2);
+				ReverseTestMove(r1);
+			}
+		}
+		if (rightRook != nullptr && !rightRook->HasMoved()) // short castle
+		{
+			if (king->GetPosition().y != rightRook->GetPosition().y || king->GetPosition().x > rightRook->GetPosition().x)
+				throw "Weird shit";
+
+			Position pos = king->GetPosition();
+			pos.x++;
+
+			bool canCastle = true;
+			for (; canCastle; pos.x++)
+			{
+				if (grid[pos.y][pos.x] == rightRook)
+					break;
+
+				if (grid[pos.y][pos.x] != nullptr)
+				{
+					canCastle = false;
+					break;
+				}
+			}
+
+			if (canCastle)
+			{
+				auto r1 = TestMove(king->GetPosition(), Position(king->GetPosition().x + 2, king->GetPosition().y));
+				auto r2 = TestMove(rightRook->GetPosition(), Position(king->GetPosition().x - 1, king->GetPosition().y));
+
+				if (!IsCheck())
+					legalMoves[king].push_back(king->GetPosition());
+
+				ReverseTestMove(r2);
+				ReverseTestMove(r1);
+			}
+		}
+	}
+
+	void UpdateLegalMoves()
+	{
+		legalMoves.clear();
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
+					legalMoves[grid[i][j]] = {};
+
+		for (int i = 0; i < SIZE.y; i++)
+			for (int j = 0; j < SIZE.x; j++)
+			{
+				Piece* p = grid[i][j];
+				if (p != nullptr && p->GetTeam() == curTurn)
+				{
+					auto moves = p->GetMoves();
+
+					for (auto& m : moves)
+					{
+						auto r = TestMove(p->GetPosition(), m);
+
+						if (!IsCheck())
+							legalMoves[p].push_back(m);
+
+						ReverseTestMove(r);
+					}
+				}
+			}
+
+		AddEnPassant();
+		AddCastles();
 	}
 public:
 	const Size SIZE;
@@ -268,11 +369,27 @@ public:
 		// en passant
 		if (p->GetType() == PieceType::Pawn && from.x != to.x && grid[to.y][to.x] == nullptr)
 		{
-			assert(grid[from.y][to.x] != nullptr);
+			assert(grid[from.y][to.x] != nullptr && grid[from.y][to.x]->GetType() == PieceType::Pawn);
 
 			capture = true;
 			delete grid[from.y][to.x];
 			grid[from.y][to.x] = nullptr;
+		}
+
+		// castles
+		if (p->GetType() == PieceType::King && abs(from.x - to.x) == 2)
+		{
+			Piece* rook = nullptr;
+
+			int dir = (to.x - from.x) / 2; // direction of castling
+			
+			for (Position pos = p->GetPosition(); rook == nullptr; pos.x += dir)
+				if (grid[pos.y][pos.x] != nullptr && grid[pos.y][pos.x]->GetType() == PieceType::Rook)
+					rook = grid[pos.y][pos.x];
+
+			grid[rook->GetPosition().y][rook->GetPosition().x] = nullptr;
+			rook->Move(Position(p->GetPosition().x - dir, p->GetPosition().y));
+			grid[rook->GetPosition().y][rook->GetPosition().x] = rook;
 		}
 
 		if (grid[to.y][to.x] != nullptr)

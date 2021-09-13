@@ -20,10 +20,12 @@ protected:
 
 	vector<Position> possibleMoves;
 	vector<Position> visible;
+
+	bool moved;
 public:
 	const ChessBoard* board;
 
-	Piece(Position pos, PlayerTeam team, const ChessBoard* board) : pos(pos), team(team), board(board) {}
+	Piece(Position pos, PlayerTeam team, const ChessBoard* board) : pos(pos), team(team), moved(false), board(board) {}
 
 	virtual ~Piece() {}
 
@@ -46,6 +48,11 @@ public:
 	virtual void Move(Position newPos)
 	{
 		pos = newPos;
+		moved = true;
+	}
+	virtual void TestMove(Position newPos)
+	{
+		pos = newPos;
 	}
 
 	Position GetPosition() const
@@ -55,5 +62,10 @@ public:
 	PlayerTeam GetTeam() const
 	{
 		return team;
+	}
+
+	bool HasMoved() const
+	{
+		return moved;
 	}
 };
