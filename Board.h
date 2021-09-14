@@ -307,8 +307,7 @@ class ChessBoard
 
 			return;
 		}
-
-		state = CheckDraw();
+		else state = CheckDraw();
 	}
 public:
 	const Size SIZE;
@@ -431,7 +430,7 @@ public:
 			int dir = (to.x - from.x) / 2; // direction of castling
 			
 			for (Position pos = p->GetPosition(); rook == nullptr; pos.x += dir)
-				if (grid[pos.y][pos.x] != nullptr && grid[pos.y][pos.x]->GetType() == PieceType::Rook)
+				if (grid[pos.y][pos.x] != nullptr && grid[pos.y][pos.x]->GetTeam() == curTurn && grid[pos.y][pos.x]->GetType() == PieceType::Rook)
 					rook = grid[pos.y][pos.x];
 
 			grid[rook->GetPosition().y][rook->GetPosition().x] = nullptr;
@@ -471,7 +470,6 @@ public:
 			cerr << "Check" << endl;
 		if (moves.back().mate)
 			cerr << "Mate" << endl;
-
 	}
 
 	bool IsCheck() const
