@@ -1,9 +1,11 @@
 #pragma once
 
+#include <optional>
+
 #include "Board.h"
 
-
 #include <SFML/Graphics.hpp>
+
 
 class Graphics
 {
@@ -16,18 +18,28 @@ class Graphics
 	vector<sf::Sprite> blackPieces;
 
 	const Piece** selectedPiecePtr;
+
+	optional<Position> promotionWindowPosition;
+	optional<GameState> resultWindowData;
+
+	sf::Font font;
 public:
 	static const Size SQUARE_SIZE;
 
 	static const sf::Color WHITE_COLOR;
 	static const sf::Color BLACK_COLOR;
 
-	Graphics(const ChessBoard* board, const Piece** selectedPiece) :
-		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess"),
-		board(board), selectedPiecePtr(selectedPiece)
-	{
-		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
+	static const string PATH_TO_FONT;
 
+
+	Graphics(const ChessBoard* board, const Piece** selectedPiece) :
+		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
+		board(board), selectedPiecePtr(selectedPiece), font()
+	{
+		window.setFramerateLimit(60);
+
+		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
+		font.loadFromFile(PATH_TO_FONT);
 
 		const int imageOrder[] = { 5, 3, 2, 4, 1, 0 };
 
@@ -45,6 +57,16 @@ public:
 			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
 		}
 	}
+
+	void SetChessBoard(ChessBoard* board)
+	{
+		this->board = board;
+	}
+	void SetSelectedPiece(const Piece** selectedPiece)
+	{
+		this->selectedPiecePtr = selectedPiece;
+	}
+
 
 	sf::RenderWindow& GetWindow()
 	{
@@ -91,10 +113,83 @@ public:
 			}
 		}
 
+		if (resultWindowData.has_value())
+		{
+			assert(resultWindowData->state != GameState::State::Game);
+
+
+			Size rectSize(SQUARE_SIZE.x * 3.0f, SQUARE_SIZE.y * 1.5f);
+
+			sf::RectangleShape rect;
+			rect.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2));
+			rect.setSize(Point<float>(rectSize));
+			rect.setOrigin(Point<float>(rectSize / 2));
+			rect.setFillColor(sf::Color::White);
+
+			window.draw(rect);
+
+
+			sf::Text resultText;
+			resultText.setFillColor(sf::Color::Black);
+			resultText.setFont(font);
+			resultText.setCharacterSize(40);
+			resultText.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2) - Point<float>(0.f, SQUARE_SIZE.y * 0.2f));
+			
+			switch (resultWindowData->state)
+			{
+			case GameState::State::WhiteWon: resultText.setString("White won"); break;
+			case GameState::State::BlackWon: resultText.setString("Black won"); break;
+			case GameState::State::Draw:	 resultText.setString("Draw"); break;
+			}
+
+			sf::FloatRect textRect = resultText.getLocalBounds();
+			resultText.setOrigin(textRect.left + textRect.width / 2.0f,
+								 textRect.top + textRect.height / 2.0f);
+
+			window.draw(resultText);
+
+
+			sf::Text reasonText;
+			reasonText.setFillColor(sf::Color::Black);
+			reasonText.setFont(font);
+			reasonText.setCharacterSize(25);
+			reasonText.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2) + Point<float>(0.f, SQUARE_SIZE.y * 0.3f));
+			reasonText.setString("by " + resultWindowData->reason);
+
+			textRect = reasonText.getLocalBounds();
+			reasonText.setOrigin(textRect.left + textRect.width / 2.0f,
+				textRect.top + textRect.height / 2.0f);
+
+			window.draw(reasonText);
+		}
+		else if (promotionWindowPosition.has_value())
+		{
+
+		}
+
 		window.display();
+	}
+
+	void SetPromotionWindowPosition(Position pos)
+	{
+		promotionWindowPosition = pos;
+	}
+	void ResetPromotionWindowPosition()
+	{
+		promotionWindowPosition.reset();
+	}
+
+	void SetResultScreen(GameState result)
+	{
+		resultWindowData = result;
+	}
+	void ResetResultScreen()
+	{
+		resultWindowData.reset();
 	}
 };
 
 const Size Graphics::SQUARE_SIZE = Size(106, 106);
 const sf::Color Graphics::WHITE_COLOR = sf::Color(238, 238, 210);
 const sf::Color Graphics::BLACK_COLOR = sf::Color(118, 150, 86);
+const string Graphics::PATH_TO_FONT = "font.ttf";

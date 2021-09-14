@@ -9,6 +9,24 @@
 #include "Piece.h"
 
 
+
+struct GameState
+{
+	enum class State
+	{
+		Game = -1, // Game is still going
+		WhiteWon,
+		BlackWon,
+		Draw
+	};
+
+	State state;
+	string reason;
+
+	GameState() : state(State::Game), reason() {}
+	GameState(State state, string reason) : state(state), reason(reason) {}
+};
+
 class ChessBoard
 {
 	vector<vector<Piece*> > grid;
@@ -19,6 +37,8 @@ class ChessBoard
 	
 	vector<vector<bool> > visibleByWhite;
 	vector<vector<bool> > visibleByBlack;
+
+	GameState state;
 
 
 	struct TestMoveData
@@ -264,6 +284,32 @@ class ChessBoard
 		AddEnPassant();
 		AddCastles();
 	}
+
+
+	GameState CheckDraw() const
+	{
+		// Егорка сделай пж
+
+		// ф-ция возвращает GameState() если не ничья и игра продолжается
+		// иначе GameState(GameState::State::Draw, "какая-то причина")
+
+		return GameState();
+	}
+
+	void UpdateState()
+	{
+		state = GameState();
+
+		if (IsMate())
+		{
+			state.state = (curTurn == PlayerTeam::White ? GameState::State::BlackWon : GameState::State::WhiteWon);
+			state.reason = "checkmate";
+
+			return;
+		}
+
+		state = CheckDraw();
+	}
 public:
 	const Size SIZE;
 
@@ -334,6 +380,7 @@ public:
 	{
 		UpdatePieces();
 		UpdateLegalMoves();
+		UpdateState();
 		/*
 		cerr << "By white: " << endl;
 		for (int i = 0; i < SIZE.y; i++)
@@ -418,10 +465,13 @@ public:
 		if (moves.back().check)
 			moves.back().mate = IsMate();
 
+		UpdateState();
+
 		if (moves.back().check)
 			cerr << "Check" << endl;
 		if (moves.back().mate)
 			cerr << "Mate" << endl;
+
 	}
 
 	bool IsCheck() const
@@ -498,5 +548,10 @@ public:
 	const PieceMove GetLastMove() const
 	{
 		return moves.back();
+	}
+
+	const GameState GetGameState() const
+	{
+		return state;
 	}
 };
