@@ -4,13 +4,14 @@
 
 #include "Coords.h"
 #include "Other.h"
+#include "Piece.h"
 
 using namespace std;
 
 
 struct PieceMove
 {
-	PieceMove() : type(), capture(false), check(false), mate(false), movedBefore(false), piece(), from(), to() {}
+	PieceMove() : type(), captured(nullptr), check(false), mate(false), movedBefore(false), piece(), from(), to() {}
 
 	enum class MoveType
 	{
@@ -24,7 +25,7 @@ struct PieceMove
 	};
 	MoveType type;
 
-	bool capture;
+	Piece* captured;
 	bool check, mate;
 	bool movedBefore;
 

@@ -74,6 +74,16 @@ class Game
 					SaveBoard("save.board");
 				else if (event.key.code == sf::Keyboard::L)
 					LoadBoard("save.board");
+				else if (event.key.code == sf::Keyboard::Left)
+				{
+					board->MoveBackward();
+					selectedPiece = nullptr;
+				}
+				else if (event.key.code == sf::Keyboard::Right)
+				{
+					board->MoveForward();
+					selectedPiece = nullptr;
+				}
 			}
 		}
 	}

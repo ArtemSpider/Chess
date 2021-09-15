@@ -72,4 +72,6 @@ public:
 	{
 		pos = newPos;
 	}
+
+	friend class ChessBoard;
 };

@@ -31,6 +31,7 @@ class ChessBoard
 {
 	vector<vector<Piece*> > grid;
 
+	int curMoveInd; // index of a move on a grid, -1 on the first move
 	vector<PieceMove> moves; // record of all moves
 
 	PlayerTeam curTurn;
@@ -279,7 +280,7 @@ class ChessBoard
 		else state = CheckDraw();
 	}
 
-	void ClearGrid()
+	void Clean()
 	{
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
@@ -288,6 +289,18 @@ class ChessBoard
 					delete this->grid[i][j];
 					this->grid[i][j] = nullptr;
 				}
+
+		for (PieceMove m : moves)
+		{
+			if (m.captured != nullptr)
+			{
+				delete m.captured;
+				m.captured = nullptr;
+			}
+		}
+
+		moves.clear();
+		state = GameState();
 	}
 
 	Piece* _GetPieceAt(Position pos)
@@ -298,7 +311,7 @@ public:
 	const Size SIZE;
 
 	ChessBoard(Size size) :
-		SIZE(size), 
+		SIZE(size), curMoveInd(-1),
 		grid(size.y, vector<Piece*>(size.x, nullptr)),
 		visibleByWhite(size.y, vector<bool>(size.x, false)),
 		visibleByBlack(size.y, vector<bool>(size.x, false)),
@@ -306,12 +319,12 @@ public:
 	
 	~ChessBoard()
 	{
-		ClearGrid();
+		Clean();
 	}
 
 	void InitGrid(vector<vector<Piece*> > grid)
 	{
-		ClearGrid();
+		Clean();
 		this->grid = grid;
 
 		Update();
@@ -358,31 +371,161 @@ public:
 		UpdateState();
 	}
 
+	void MoveBackward()
+	{
+		if (curMoveInd == -1)
+			return;
+
+		PieceMove move = moves[curMoveInd--];
+
+		Position from = move.from;
+		Position to = move.to;
+
+		Piece* captured = move.captured;
+		Piece* p = grid[to.y][to.x];
+
+		if (move.type == PieceMove::MoveType::Move)
+		{
+			p->Move(from);
+			grid[from.y][from.x] = p;
+			grid[to.y][to.x] = nullptr;
+
+			if (captured != nullptr)
+				grid[captured->GetPosition().y][captured->GetPosition().x] = captured;
+
+			p->moved = move.movedBefore;
+		}
+		else if (move.type == PieceMove::MoveType::CastleShort)
+		{
+			// move the king back
+			p->Move(from);
+			grid[from.y][from.x] = p;
+			grid[to.y][to.x] = nullptr;
+
+			p->moved = false;
+
+			// move the rook back
+			Piece* rook = grid[to.y][to.x - 1];
+
+			Position prevPos = to + Position(1, 0);
+			rook->Move(prevPos);
+			grid[prevPos.y][prevPos.x] = rook;
+			grid[to.y][to.x - 1] = nullptr;
+
+			rook->moved = false;
+		}
+		else if (move.type == PieceMove::MoveType::CastleLong)
+		{
+			// move the king back
+			p->Move(from);
+			grid[from.y][from.x] = p;
+			grid[to.y][to.x] = nullptr;
+
+			p->moved = false;
+
+			// move the rook back
+			Piece* rook = grid[to.y][to.x + 1];
+
+			Position prevPos = to - Position(2, 0);
+			rook->Move(prevPos);
+			grid[prevPos.y][prevPos.x] = rook;
+			grid[to.y][to.x + 1] = nullptr;
+
+			rook->moved = false;
+		}
+
+		curTurn = OtherTeam(curTurn);
+
+		Update();
+	}
+	void MoveForward()
+	{
+		if (curMoveInd + 1 == moves.size())
+			return;
+
+		PieceMove move = moves[++curMoveInd];
+
+		Position from = move.from;
+		Position to = move.to;
+
+		Piece* captured = move.captured;
+		Piece* p = grid[from.y][from.x];
+
+		if (move.type == PieceMove::MoveType::Move)
+		{
+			if (captured != nullptr)
+				grid[captured->GetPosition().y][captured->GetPosition().x] = nullptr;
+
+			p->Move(to);
+			grid[to.y][to.x] = p;
+			grid[from.y][from.x] = nullptr;
+		}
+		else if (move.type == PieceMove::MoveType::CastleShort)
+		{
+			// move the king forward
+			p->Move(to);
+			grid[to.y][to.x] = p;
+			grid[from.y][from.x] = nullptr;
+
+			// move the rook forward
+			Piece* rook = grid[to.y][to.x + 1];
+
+			Position newPos = to - Position(1, 0);
+			rook->Move(newPos);
+			grid[newPos.y][newPos.x] = rook;
+			grid[to.y][to.x + 1] = nullptr;
+		}
+		else if (move.type == PieceMove::MoveType::CastleLong)
+		{
+			// move the king forward
+			p->Move(to);
+			grid[to.y][to.x] = p;
+			grid[from.y][from.x] = nullptr;
+
+			// move the rook forward
+			Piece* rook = grid[to.y][to.x - 2];
+
+			Position newPos = to + Position(1, 0);
+			rook->Move(newPos);
+			grid[newPos.y][newPos.x] = rook;
+			grid[to.y][to.x - 2] = nullptr;
+		}
+
+		curTurn = OtherTeam(curTurn);
+
+		Update();
+	}
+
 	void MovePiece(Position from, Position to)
 	{
 		Piece* p = _GetPieceAt(from);
 
+		if (curMoveInd + 1 < moves.size())
+			moves.erase(moves.begin() + (curMoveInd + 1), moves.end());
+
 		moves.emplace_back();
+
+		curMoveInd = moves.size() - 1;
 
 		moves.back().movedBefore = p->HasMoved();
 		moves.back().from = from;
 		moves.back().to = to;
 		moves.back().piece = p->GetType();
+		moves.back().type = PieceMove::MoveType::Move;
 
 		p->Move(to);
 
 		grid[from.y][from.x] = nullptr;
 
-		bool capture = false;
+		Piece* capture = nullptr;
 
 		// en passant
 		if (p->GetType() == PieceType::Pawn && from.x != to.x && IsEmpty(to))
 		{
-			capture = true;
-			delete grid[from.y][to.x];
+			capture = grid[from.y][to.x];
 			grid[from.y][to.x] = nullptr;
 		}
-
+		else
 		// castles
 		if (p->GetType() == PieceType::King && abs(from.x - to.x) == 2)
 		{
@@ -397,12 +540,13 @@ public:
 			grid[rook->GetPosition().y][rook->GetPosition().x] = nullptr;
 			rook->Move(Position(p->GetPosition().x - dir, p->GetPosition().y));
 			grid[rook->GetPosition().y][rook->GetPosition().x] = rook;
-		}
 
+			moves.back().type = (dir == -1 ? PieceMove::MoveType::CastleLong : PieceMove::MoveType::CastleShort);
+		}
+		else
 		if (!IsEmpty(to))
 		{
-			capture = true;
-			delete grid[to.y][to.x];
+			capture = grid[to.y][to.x];
 			grid[to.y][to.x] = nullptr;
 		}
 		grid[to.y][to.x] = p;
@@ -410,7 +554,7 @@ public:
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
 		UpdatePieces();
 
-		moves.back().capture = capture;
+		moves.back().captured = capture;
 
 		UpdateLegalMoves();
 
@@ -505,6 +649,8 @@ public:
 	}
 	const PieceMove GetLastMove() const
 	{
+		if (moves.empty())
+			throw "There are no moves";
 		return moves.back();
 	}
 
