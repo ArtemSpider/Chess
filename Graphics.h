@@ -12,11 +12,11 @@ class Graphics
 	sf::Texture piecesTexture;
 
 	sf::RenderWindow window;
-	const ChessBoard* board;
 
 	vector<sf::Sprite> whitePieces; // in the order of PieceType
 	vector<sf::Sprite> blackPieces;
 
+	const ChessBoard* board;
 	const Piece** selectedPiecePtr;
 
 	optional<Position> promotionWindowPosition;
@@ -56,12 +56,6 @@ public:
 				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
 			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
 		}
-	}
-
-
-	sf::RenderWindow& GetWindow()
-	{
-		return window;
 	}
 
 	void Draw()
@@ -159,6 +153,16 @@ public:
 		}
 
 		window.display();
+	}
+
+	sf::RenderWindow& GetWindow()
+	{
+		return window;
+	}
+
+	void SetChessBoard(const ChessBoard* board)
+	{
+		this->board = board;
 	}
 
 	void SetPromotionWindowPosition(Position pos)

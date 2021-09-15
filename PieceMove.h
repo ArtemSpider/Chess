@@ -10,7 +10,7 @@ using namespace std;
 
 struct PieceMove
 {
-	PieceMove() : type(), capture(false), check(false), mate(false), piece(), from(), to() {}
+	PieceMove() : type(), capture(false), check(false), mate(false), movedBefore(false), piece(), from(), to() {}
 
 	enum class MoveType
 	{
@@ -26,6 +26,7 @@ struct PieceMove
 
 	bool capture;
 	bool check, mate;
+	bool movedBefore;
 
 	PieceType piece;
 	Position from, to;

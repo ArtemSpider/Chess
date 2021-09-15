@@ -53,5 +53,11 @@
     <ClInclude Include="Pieces.h">
       <Filter>Файлы заголовков\Model</Filter>
     </ClInclude>
+    <ClInclude Include="GameIO.h">
+      <Filter>Файлы заголовков\View</Filter>
+    </ClInclude>
+    <ClInclude Include="Boards.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

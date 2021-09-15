@@ -361,6 +361,14 @@ public:
 	void MovePiece(Position from, Position to)
 	{
 		Piece* p = _GetPieceAt(from);
+
+		moves.emplace_back();
+
+		moves.back().movedBefore = p->HasMoved();
+		moves.back().from = from;
+		moves.back().to = to;
+		moves.back().piece = p->GetType();
+
 		p->Move(to);
 
 		grid[from.y][from.x] = nullptr;
@@ -401,13 +409,6 @@ public:
 
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
 		UpdatePieces();
-
-
-		moves.emplace_back();
-
-		moves.back().from = from;
-		moves.back().to = to;
-		moves.back().piece = p->GetType();
 
 		moves.back().capture = capture;
 

@@ -150,8 +150,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Board.h" />
+    <ClInclude Include="Boards.h" />
     <ClInclude Include="Chess.h" />
     <ClInclude Include="Coords.h" />
+    <ClInclude Include="GameIO.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Other.h" />
     <ClInclude Include="Piece.h" />
