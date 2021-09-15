@@ -32,7 +32,7 @@ public:
 		if (firstMove)
 		{
 			Position newPos = pos + Position(0, 2 * dir);
-			if (board->InBounds(newPos) && board->IsEmpty(pos + Position(0, dir)) && board->IsEmpty(newPos))
+			if (board->InBounds(newPos) && board->IsEmpty(newPos) && board->IsEmpty(pos + Position(0, dir)))
 				possibleMoves.push_back(newPos);
 		}
 
@@ -46,25 +46,21 @@ public:
 			Position newPos = pos + Position(-1, dir);
 			if (board->InBounds(newPos))
 			{
-				const Piece* p = board->GetPieceAt(newPos);
-
-				if (p != nullptr && p->GetTeam() != GetTeam())
-					possibleMoves.push_back(newPos);
 				visible.push_back(newPos);
+				if (!board->IsEmpty(newPos) && board->GetTeam(newPos) != GetTeam())
+					possibleMoves.push_back(newPos);
 			}
 
 			newPos = pos + Position(+1, dir);
 			if (board->InBounds(newPos))
 			{
-				const Piece* p = board->GetPieceAt(newPos);
-
-				if (p != nullptr && p->GetTeam() != GetTeam())
-					possibleMoves.push_back(newPos);
 				visible.push_back(newPos);
+				if (!board->IsEmpty(newPos) && board->GetTeam(newPos) != GetTeam())
+					possibleMoves.push_back(newPos);
 			}
 		}
 
-		// en passant in ChessBoard
+		// en passant implemented in ChessBoard
 	}
 
 	string GetName() const override
@@ -87,12 +83,11 @@ public:
 		possibleMoves.clear();
 		visible.clear();
 
-		const int dx[] = { 1, 2, 2, 1, -1, -2, -2, -1 };
-		const int dy[] = { -2, -1, 1, 2, 2, 1, -1, -2 };
+		const Position dpos[] = { {1, -2}, {2, -1}, {2, 1}, {1, 2}, {-1, 2}, {-2, 1}, {-2, -1}, {-1, -2} };
 
 		for (int d = 0; d < 8; d++)
 		{
-			Position newPos = Position(pos.x + dx[d], pos.y + dy[d]);
+			Position newPos = pos + dpos[d];
 			if (board->InBounds(newPos))
 			{
 				visible.push_back(newPos);
@@ -125,7 +120,7 @@ class Bishop : public Piece
 					possibleMoves.push_back(newPos);
 				return false;
 			}
-			possibleMoves.push_back(newPos);
+			else possibleMoves.push_back(newPos);
 		}
 		else return false;
 
@@ -175,7 +170,7 @@ class Rook : public Piece
 					possibleMoves.push_back(newPos);
 				return false;
 			}
-			possibleMoves.push_back(newPos);
+			else possibleMoves.push_back(newPos);
 		}
 		else return false;
 
@@ -201,7 +196,7 @@ public:
 		for (int j = 1;; j++)
 			if (!CheckAndPush(pos + Position(0, -j))) break;
 
-		// castle in ChessBoard
+		// castle implemented in ChessBoard
 	}
 
 	string GetName() const override
@@ -224,21 +219,20 @@ public:
 		possibleMoves.clear();
 		visible.clear();
 
-		const int dx[] = { 1, 1, -1, -1, 1, 0, -1, 0 };
-		const int dy[] = { 1, -1, 1, -1, 0, 1, 0, -1 };
+		const Position dpos[] = { {-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1} };
 
 		for (int d = 0; d < 8; d++)
 		{
-			Position newPos = pos + Position(dx[d], dy[d]);
+			Position newPos = pos + dpos[d];
 			if (board->InBounds(newPos))
 			{
-				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())				
-					possibleMoves.push_back(newPos);				
 				visible.push_back(newPos);
+				if (board->IsEmpty(newPos) || board->GetTeam(newPos) != GetTeam())				
+					possibleMoves.push_back(newPos);
 			}
 		}
 
-		// castle in ChessBoard
+		// castle implemented in ChessBoard
 	}
 
 	string GetName() const override
@@ -264,7 +258,7 @@ class Queen : public Piece
 					possibleMoves.push_back(newPos);
 				return false;
 			}
-			possibleMoves.push_back(newPos);
+			else possibleMoves.push_back(newPos);
 		}
 		else return false;
 
@@ -278,6 +272,7 @@ public:
 		possibleMoves.clear();
 		visible.clear();
 
+		// diagonals
 		for (int i = 1;; i++)
 			if (!CheckAndPush(pos + Position(+i, +i))) break;
 
@@ -290,18 +285,18 @@ public:
 		for (int i = 1;; i++)
 			if (!CheckAndPush(pos + Position(+i, -i))) break;
 
-
+		// rows & columns
 		for (int i = 1;; i++)
 			if (!CheckAndPush(pos + Position(+i, 0))) break;
 
 		for (int i = 1;; i++)
 			if (!CheckAndPush(pos + Position(-i, 0))) break;
 
-		for (int j = 1;; j++)
-			if (!CheckAndPush(pos + Position(0, +j))) break;
+		for (int i = 1;; i++)
+			if (!CheckAndPush(pos + Position(0, +i))) break;
 
-		for (int j = 1;; j++)
-			if (!CheckAndPush(pos + Position(0, -j))) break;
+		for (int i = 1;; i++)
+			if (!CheckAndPush(pos + Position(0, -i))) break;
 	}
 
 	string GetName() const override

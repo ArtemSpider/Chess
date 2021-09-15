@@ -31,7 +31,7 @@ class ChessBoard
 {
 	vector<vector<Piece*> > grid;
 
-	vector<PieceMove> moves;
+	vector<PieceMove> moves; // record of all moves
 
 	PlayerTeam curTurn;
 	
@@ -59,7 +59,7 @@ class ChessBoard
 	{
 		Piece* p = grid[from.y][from.x];
 
-		p->TestMove(to);
+		p->SetPosition(to);
 
 		grid[from.y][from.x] = nullptr;
 
@@ -75,7 +75,7 @@ class ChessBoard
 		grid[data.from.y][data.from.x] = grid[data.to.y][data.to.x];
 		grid[data.to.y][data.to.x] = data.removedPiece;
 
-		grid[data.from.y][data.from.x]->TestMove(data.from);
+		grid[data.from.y][data.from.x]->SetPosition(data.from);
 
 		UpdatePieces();
 	}
@@ -92,14 +92,14 @@ class ChessBoard
 
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
-				if (grid[i][j] != nullptr)
+				if (!IsEmpty({ j, i }))
 				{
 					grid[i][j]->Update();
 
 					auto& visible = (grid[i][j]->GetTeam() == PlayerTeam::White ? visibleByWhite : visibleByBlack);
-					auto visibleByPiece = grid[i][j]->GetVisible();
+					const vector<Position>& visibleByPiece = grid[i][j]->GetVisible();
 
-					for (auto& p : visibleByPiece)
+					for (const Position& p : visibleByPiece)
 						visible[p.y][p.x] = true;
 				}
 	}
@@ -109,49 +109,30 @@ class ChessBoard
 	{
 		if (!moves.empty())
 		{
-			auto lastMove = moves.back();
+			PieceMove lastMove = GetLastMove();
 			if (lastMove.piece == PieceType::Pawn &&
 				lastMove.type == PieceMove::MoveType::Move &&
 				abs(lastMove.to.y - lastMove.from.y) == 2)
 			{
-				Position pos = lastMove.to;
-				pos.x -= 1;
-
-				if (InBounds(pos))
+				auto CheckAndPush = [&](Position pos)
 				{
-					const Piece* p = GetPieceAt(pos);
-					if (p != nullptr && p->GetType() == PieceType::Pawn && p->GetTeam() == curTurn)
+					if (InBounds(pos) && !IsEmpty(pos) && GetType(pos) == PieceType::Pawn && GetTeam(pos) == curTurn)
 					{
+						Piece* p = _GetPieceAt(pos);
+
 						Position newPos(lastMove.from.x, (lastMove.from.y + lastMove.to.y) / 2);
 
 						auto r = TestMove(p->GetPosition(), newPos);
 
 						if (!IsCheck())
-							legalMoves[(Piece*)p].push_back(newPos);
+							legalMoves[p].push_back(newPos);
 
 						ReverseTestMove(r);
 					}
-				}
+				};
 
-
-				pos = lastMove.to;
-				pos.x += 1;
-
-				if (InBounds(pos))
-				{
-					const Piece* p = GetPieceAt(pos);
-					if (p != nullptr && p->GetType() == PieceType::Pawn && p->GetTeam() == curTurn)
-					{
-						Position newPos(lastMove.from.x, (lastMove.from.y + lastMove.to.y) / 2);
-
-						auto r = TestMove(p->GetPosition(), newPos);
-
-						if (!IsCheck())
-							legalMoves[(Piece*)p].push_back(newPos);
-
-						ReverseTestMove(r);
-					}
-				}
+				CheckAndPush(lastMove.to + Position(1, 0));
+				CheckAndPush(lastMove.to - Position(1, 0));
 			}
 		}
 	}
@@ -163,12 +144,12 @@ class ChessBoard
 
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
+				if (!IsEmpty({ j, i }) && GetTeam({ j, i }) == curTurn)
 				{
-					if (grid[i][j]->GetType() == PieceType::King)
+					if (GetType({ j, i }) == PieceType::King)
 						king = grid[i][j];
 
-					if (grid[i][j]->GetType() == PieceType::Rook)
+					if (GetType({ j, i }) == PieceType::Rook)
 						(leftRook == nullptr ? leftRook : rightRook) = grid[i][j];
 				}
 
@@ -186,19 +167,16 @@ class ChessBoard
 
 		if (leftRook != nullptr && !leftRook->HasMoved()) // long castle
 		{
-			if (king->GetPosition().y != leftRook->GetPosition().y || king->GetPosition().x < leftRook->GetPosition().x)
-				throw "Weird shit";
-
 			Position pos = king->GetPosition();
 			pos.x--;
 
 			bool canCastle = true;
 			for (; canCastle; pos.x--)
 			{
-				if (grid[pos.y][pos.x] == leftRook)
+				if (GetPieceAt(pos) == leftRook)
 					break;
 
-				if (grid[pos.y][pos.x] != nullptr)
+				if (!IsEmpty(pos))
 				{
 					canCastle = false;
 					break;
@@ -219,19 +197,16 @@ class ChessBoard
 		}
 		if (rightRook != nullptr && !rightRook->HasMoved()) // short castle
 		{
-			if (king->GetPosition().y != rightRook->GetPosition().y || king->GetPosition().x > rightRook->GetPosition().x)
-				throw "Weird shit";
-
 			Position pos = king->GetPosition();
 			pos.x++;
 
 			bool canCastle = true;
 			for (; canCastle; pos.x++)
 			{
-				if (grid[pos.y][pos.x] == rightRook)
+				if (GetPieceAt(pos) == rightRook)
 					break;
 
-				if (grid[pos.y][pos.x] != nullptr)
+				if (!IsEmpty(pos))
 				{
 					canCastle = false;
 					break;
@@ -258,18 +233,13 @@ class ChessBoard
 
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn)
+				if (!IsEmpty({ j, i }) && GetTeam({ j, i }) == curTurn)
+				{
 					legalMoves[grid[i][j]] = {};
 
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-			{
-				Piece* p = grid[i][j];
-				if (p != nullptr && p->GetTeam() == curTurn)
-				{
-					auto moves = p->GetMoves();
-
-					for (auto& m : moves)
+					Piece* p = _GetPieceAt({ j, i });
+					auto moves = p->GetMoves(); // Must copy because of IsCheck
+					for (const auto& m : moves)
 					{
 						auto r = TestMove(p->GetPosition(), m);
 
@@ -279,7 +249,6 @@ class ChessBoard
 						ReverseTestMove(r);
 					}
 				}
-			}
 
 		AddEnPassant();
 		AddCastles();
@@ -309,17 +278,8 @@ class ChessBoard
 		}
 		else state = CheckDraw();
 	}
-public:
-	const Size SIZE;
 
-	ChessBoard(Size size) 
-		: SIZE(size), 
-		grid(size.y, vector<Piece*>(size.x, nullptr)),
-		visibleByWhite(size.y, vector<bool>(size.x, false)),
-		visibleByBlack(size.y, vector<bool>(size.x, false)),
-		moves(), curTurn(PlayerTeam::White) {}
-	
-	~ChessBoard()
+	void ClearGrid()
 	{
 		for (int i = 0; i < SIZE.y; i++)
 			for (int j = 0; j < SIZE.x; j++)
@@ -330,15 +290,28 @@ public:
 				}
 	}
 
+	Piece* _GetPieceAt(Position pos)
+	{
+		return grid[pos.y][pos.x];
+	}
+public:
+	const Size SIZE;
+
+	ChessBoard(Size size) :
+		SIZE(size), 
+		grid(size.y, vector<Piece*>(size.x, nullptr)),
+		visibleByWhite(size.y, vector<bool>(size.x, false)),
+		visibleByBlack(size.y, vector<bool>(size.x, false)),
+		moves(), curTurn(PlayerTeam::White) {}
+	
+	~ChessBoard()
+	{
+		ClearGrid();
+	}
+
 	void InitGrid(vector<vector<Piece*> > grid)
 	{
-		for (int i = 0; i < SIZE.y; i++)
-			for (int j = 0; j < SIZE.x; j++)
-				if (this->grid[i][j] != nullptr)
-				{
-					delete this->grid[i][j];
-					this->grid[i][j] = nullptr;
-				}
+		ClearGrid();
 		this->grid = grid;
 
 		Update();
@@ -348,31 +321,34 @@ public:
 	{
 		return (pos.x >= 0 && pos.x < SIZE.x) && (pos.y >= 0 && pos.y < SIZE.y);
 	}
+
+
+	const Piece* GetPieceAt(Position pos) const
+	{
+		return grid[pos.y][pos.x];
+	}
+
 	bool IsEmpty(Position pos) const
 	{
-		return grid[pos.y][pos.x] == nullptr;
+		return GetPieceAt(pos) == nullptr;
 	}
 	PlayerTeam GetTeam(Position pos) const
 	{
 		if (IsEmpty(pos))
 			throw "There is no piece";
-		return grid[pos.y][pos.x]->GetTeam();
+		return GetPieceAt(pos)->GetTeam();
 	}
-	const Piece* GetPieceAt(Position pos) const
+	PieceType GetType(Position pos) const
 	{
-		return grid[pos.y][pos.x];
+		if (IsEmpty(pos))
+			throw "There is no piece";
+		return GetPieceAt(pos)->GetType();
 	}
-	bool IsPossibleMove(Piece* piece, Position to) const
+	bool HasMoved(Position pos) const
 	{
-		if (piece == nullptr) return false;
-		if (!InBounds(to)) return false;
-
-		Piece* toPiece = grid[to.y][to.x];
-
-		if (toPiece != nullptr && piece->GetTeam() == toPiece->GetTeam())
-			return false;
-
-		return true;
+		if (IsEmpty(pos))
+			throw "There is no piece";
+		return GetPieceAt(pos)->HasMoved();
 	}
 
 	void Update()
@@ -380,32 +356,11 @@ public:
 		UpdatePieces();
 		UpdateLegalMoves();
 		UpdateState();
-		/*
-		cerr << "By white: " << endl;
-		for (int i = 0; i < SIZE.y; i++)
-		{
-			for (int j = 0; j < SIZE.x; j++)
-				cerr << visibleByWhite[SIZE.y - 1 - i][j];
-			cerr << endl;
-		}
-		cerr << endl;
-
-		cerr << "By black: " << endl;
-		for (int i = 0; i < SIZE.y; i++)
-		{
-			for (int j = 0; j < SIZE.x; j++)
-				cerr << visibleByBlack[SIZE.y - 1 - i][j];
-			cerr << endl;
-		}
-
-		cerr << endl;
-		cerr << endl;*/
 	}
 
 	void MovePiece(Position from, Position to)
 	{
-		Piece* p = grid[from.y][from.x];
-
+		Piece* p = _GetPieceAt(from);
 		p->Move(to);
 
 		grid[from.y][from.x] = nullptr;
@@ -413,10 +368,8 @@ public:
 		bool capture = false;
 
 		// en passant
-		if (p->GetType() == PieceType::Pawn && from.x != to.x && grid[to.y][to.x] == nullptr)
+		if (p->GetType() == PieceType::Pawn && from.x != to.x && IsEmpty(to))
 		{
-			assert(grid[from.y][to.x] != nullptr && grid[from.y][to.x]->GetType() == PieceType::Pawn);
-
 			capture = true;
 			delete grid[from.y][to.x];
 			grid[from.y][to.x] = nullptr;
@@ -430,7 +383,7 @@ public:
 			int dir = (to.x - from.x) / 2; // direction of castling
 			
 			for (Position pos = p->GetPosition(); rook == nullptr; pos.x += dir)
-				if (grid[pos.y][pos.x] != nullptr && grid[pos.y][pos.x]->GetTeam() == curTurn && grid[pos.y][pos.x]->GetType() == PieceType::Rook)
+				if (!IsEmpty(pos) && GetTeam(pos) == curTurn && GetType(pos) == PieceType::Rook)
 					rook = grid[pos.y][pos.x];
 
 			grid[rook->GetPosition().y][rook->GetPosition().x] = nullptr;
@@ -438,7 +391,7 @@ public:
 			grid[rook->GetPosition().y][rook->GetPosition().x] = rook;
 		}
 
-		if (grid[to.y][to.x] != nullptr)
+		if (!IsEmpty(to))
 		{
 			capture = true;
 			delete grid[to.y][to.x];
@@ -465,11 +418,6 @@ public:
 			moves.back().mate = IsMate();
 
 		UpdateState();
-
-		if (moves.back().check)
-			cerr << "Check" << endl;
-		if (moves.back().mate)
-			cerr << "Mate" << endl;
 	}
 
 	bool IsCheck() const
@@ -477,7 +425,7 @@ public:
 		Piece* king = nullptr;
 		for (int i = 0; i < SIZE.y && king == nullptr; i++)
 			for (int j = 0; j < SIZE.x && king == nullptr; j++)
-				if (!IsEmpty({ j, i }) && grid[i][j]->GetTeam() == curTurn && grid[i][j]->GetType() == PieceType::King)
+				if (!IsEmpty({ j, i }) && GetTeam({ j, i }) == curTurn && GetType({j, i}) == PieceType::King)
 					king = grid[i][j];
 
 		if (king == nullptr)
@@ -487,6 +435,19 @@ public:
 	}
 	bool IsMate() const
 	{
+		if (!IsCheck())
+			return false;
+
+		for (auto& p : legalMoves)
+			if (!p.second.empty())
+				return false;
+		return true;
+	}
+	bool IsStalemate() const
+	{
+		if (IsCheck())
+			return false;
+
 		for (auto& p : legalMoves)
 			if (!p.second.empty())
 				return false;
@@ -506,12 +467,10 @@ public:
 		return legalMoves.at((Piece*)p);
 	}
 
-
 	PlayerTeam GetTurn() const
 	{
 		return curTurn;
 	}
-
 
 	const vector<vector<bool> >& GetVisibleBy(PlayerTeam team) const
 	{

@@ -58,15 +58,6 @@ public:
 		}
 	}
 
-	void SetChessBoard(ChessBoard* board)
-	{
-		this->board = board;
-	}
-	void SetSelectedPiece(const Piece** selectedPiece)
-	{
-		this->selectedPiecePtr = selectedPiece;
-	}
-
 
 	sf::RenderWindow& GetWindow()
 	{

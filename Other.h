@@ -28,9 +28,3 @@ enum class PieceType
 
 	Count // Must be last
 };
-
-
-string ToChessNotation(Position pos)
-{
-	return string(1, 'a' + pos.x) + string(1, '1' + pos.y);
-}

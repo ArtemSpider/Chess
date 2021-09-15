@@ -28,8 +28,8 @@ public:
     : x((Type)xy), y((Type)xy)
     {}
 
-    template <typename CType>
-    constexpr Point(const CType& x, const CType& y)
+    template <typename CType1, typename CType2>
+    constexpr Point(const CType1& x, const CType2& y)
     : x((Type)x), y((Type)y)
     {}
 
@@ -38,8 +38,8 @@ public:
     : x((Type)copy.x), y((Type)copy.y)
     {}
 
-    template <typename CType>
-    constexpr Point(const std::pair<CType, CType>& copy)
+    template <typename CType1, typename CType2>
+    constexpr Point(const std::pair<CType1, CType2>& copy)
     : x(copy.first), y(copy.second)
     {}
 
@@ -52,7 +52,7 @@ public:
 
 #if __has_include(<b2_math.h>)
     constexpr Point(const b2Vec2& copy)
-        : x(copy.x), y(copy.y)
+        : x((Type)copy.x), y((Type)copy.y)
     {}
 #endif
 
@@ -105,6 +105,10 @@ public:
     {
         return f(y, x);
     }
+    constexpr Point<Type> reversed() const
+    {
+        return Point<Type>(y, x);
+    }
 
 
     constexpr void abs()
@@ -121,6 +125,12 @@ public:
     {
         x = std::sqrt(x);
         y = std::sqrt(y);
+    }
+    constexpr void reverse()
+    {
+        Type t = x;
+        x = y;
+        y = t;
     }
     void apply(Type (*f)(Type))
     {
@@ -329,6 +339,10 @@ public:
         ss << x << between << y;
         return ss.str();
     }
+    std::pair<Type, Type> AsPair() const
+    {
+        return std::pair<Type, Type>(x, y);
+    }
 #if __has_include(<SFML/System/Vector2.hpp>)
     sf::Vector2<Type> AsVector2() const
     {
@@ -342,6 +356,11 @@ public:
     }
 #endif
 
+    // Неявные преобразования
+    operator std::pair<Type, Type>() const
+    {
+        return std::pair<Type, Type>(x, y);
+    }
 #if __has_include(<SFML/System/Vector2.hpp>)
     operator sf::Vector2<Type>() const
     {

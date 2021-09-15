@@ -75,24 +75,18 @@ class Game
 			if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Button::Left)
 			{
 				Position pos = Position(event.mouseButton.x, event.mouseButton.y) / Graphics::SQUARE_SIZE;
-
 				pos = Position(pos.x, board->SIZE.y - 1 - pos.y);
 
 				if (selectedPiece != nullptr && pos != selectedPiece->GetPosition())
 				{
-					auto possibleMoves = board->GetLegalMoves(selectedPiece);
+					const auto& possibleMoves = board->GetLegalMoves(selectedPiece);
 					if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
 						Move(selectedPiece, pos);
 					selectedPiece = nullptr;
 				}
 
-				if (board->InBounds(pos) && !board->IsEmpty(pos))
-				{
-					const Piece* p = board->GetPieceAt(pos);
-
-					if (p->GetTeam() == board->GetTurn())
-						selectedPiece = p;
-				}
+				if (board->InBounds(pos) && !board->IsEmpty(pos) && board->GetTeam(pos) == board->GetTurn())
+					selectedPiece = board->GetPieceAt(pos);
 			}
 		}
 	}
