@@ -11,7 +11,7 @@ using namespace std;
 
 struct PieceMove
 {
-	PieceMove() : type(), captured(nullptr), check(false), mate(false), movedBefore(false), piece(), from(), to() {}
+	PieceMove() : type(), captured(nullptr), check(false), mate(false), movedBefore(false), piece(), from(), to(), promoted(nullptr) {}
 
 	enum class MoveType
 	{
@@ -29,6 +29,8 @@ struct PieceMove
 	bool check, mate;
 	bool movedBefore;
 
-	PieceType piece;
+	Piece* piece;
 	Position from, to;
+
+	Piece* promoted;
 };

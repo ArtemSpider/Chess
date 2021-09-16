@@ -111,7 +111,7 @@ class ChessBoard
 		if (!moves.empty())
 		{
 			PieceMove lastMove = GetLastMove();
-			if (lastMove.piece == PieceType::Pawn &&
+			if (lastMove.piece->GetType() == PieceType::Pawn &&
 				lastMove.type == PieceMove::MoveType::Move &&
 				abs(lastMove.to.y - lastMove.from.y) == 2)
 			{
@@ -382,7 +382,7 @@ public:
 		Position to = move.to;
 
 		Piece* captured = move.captured;
-		Piece* p = grid[to.y][to.x];
+		Piece* p = move.piece;
 
 		if (move.type == PieceMove::MoveType::Move)
 		{
@@ -433,6 +433,11 @@ public:
 
 			rook->moved = false;
 		}
+		else if (move.type == PieceMove::MoveType::PromotionQueen)
+		{
+			grid[to.y][to.x] = captured;
+			grid[from.y][from.x] = p;
+		}
 
 		curTurn = OtherTeam(curTurn);
 
@@ -449,7 +454,7 @@ public:
 		Position to = move.to;
 
 		Piece* captured = move.captured;
-		Piece* p = grid[from.y][from.x];
+		Piece* p = move.piece;
 
 		if (move.type == PieceMove::MoveType::Move)
 		{
@@ -490,6 +495,11 @@ public:
 			grid[newPos.y][newPos.x] = rook;
 			grid[to.y][to.x - 2] = nullptr;
 		}
+		else if (move.type == PieceMove::MoveType::PromotionQueen)
+		{
+			grid[to.y][to.x] = move.promoted;
+			grid[from.y][from.x] = nullptr;
+		}
 
 		curTurn = OtherTeam(curTurn);
 
@@ -501,7 +511,12 @@ public:
 		Piece* p = _GetPieceAt(from);
 
 		if (curMoveInd + 1 < moves.size())
+		{
+			for (size_t i = curMoveInd + 1; i < moves.size(); i++)
+				if (moves[i].promoted != nullptr)
+					delete moves[i].promoted;
 			moves.erase(moves.begin() + (curMoveInd + 1), moves.end());
+		}
 
 		moves.emplace_back();
 
@@ -510,7 +525,7 @@ public:
 		moves.back().movedBefore = p->HasMoved();
 		moves.back().from = from;
 		moves.back().to = to;
-		moves.back().piece = p->GetType();
+		moves.back().piece = p;
 		moves.back().type = PieceMove::MoveType::Move;
 
 		p->Move(to);
@@ -550,6 +565,15 @@ public:
 			grid[to.y][to.x] = nullptr;
 		}
 		grid[to.y][to.x] = p;
+
+		// promotion
+		if (p->GetType() == PieceType::Pawn && (to.y == 0 || to.y == 7))
+		{
+			p->SetPosition(from);
+			grid[to.y][to.x] = moves.back().promoted = MakeQueen(to, p->GetTeam(), this);
+
+			moves.back().type = PieceMove::MoveType::PromotionQueen;
+		}
 
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
 		UpdatePieces();

@@ -308,3 +308,29 @@ public:
 		return PieceType::Queen;
 	}
 };
+
+
+Piece* MakePawn(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new Pawn(pos, team, board);
+}
+Piece* MakeKnight(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new Knight(pos, team, board);
+}
+Piece* MakeBishop(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new Bishop(pos, team, board);
+}
+Piece* MakeRook(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new Rook(pos, team, board);
+}
+Piece* MakeQueen(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new Queen(pos, team, board);
+}
+Piece* MakeKing(Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	return new King(pos, team, board);
+}

@@ -75,3 +75,11 @@ public:
 
 	friend class ChessBoard;
 };
+
+
+Piece* MakeQueen(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakeKnight(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakeBishop(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakeRook(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakeQueen(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakeKing(Position pos, PlayerTeam team, const ChessBoard* board);
