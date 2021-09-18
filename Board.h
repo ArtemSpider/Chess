@@ -27,19 +27,32 @@ struct GameState
 	GameState(State state, string reason) : state(state), reason(reason) {}
 };
 
+struct TimeControl
+{
+	int time;
+	int increment;
+};
+
 class ChessBoard
 {
 	vector<vector<Piece*> > grid;
 
-	int curMoveInd; // index of a move on a grid, -1 on the first move
-	vector<PieceMove> moves; // record of all moves
+	int curMoveInd;				// index of a move on a grid, -1 on the first move
+	vector<PieceMove> moves;	// record of all moves
 
-	PlayerTeam curTurn;
+	PlayerTeam curTurn;			// turn on the board
+	PlayerTeam realTurn;		// turn not considering moveBackwards
 	
 	vector<vector<bool> > visibleByWhite;
 	vector<vector<bool> > visibleByBlack;
 
 	GameState state;
+
+
+	bool withoutTime;
+	const TimeControl timeControl;
+	int remainingTimeWhite;	// in seconds
+	int remainingTimeBlack;	// in seconds
 
 
 	struct TestMoveData
@@ -49,11 +62,11 @@ class ChessBoard
 
 		Piece* removedPiece;
 
-		TestMoveData()
-			: from(), to(), removedPiece(nullptr)
+		TestMoveData() :
+			from(), to(), removedPiece(nullptr)
 		{}
-		TestMoveData(Position from, Position to, Piece* removedPiece)
-			: from(from), to(to), removedPiece(removedPiece)
+		TestMoveData(Position from, Position to, Piece* removedPiece) :
+			from(from), to(to), removedPiece(removedPiece)
 		{}
 	};
 	TestMoveData TestMove(Position from, Position to)
@@ -310,12 +323,16 @@ class ChessBoard
 public:
 	const Size SIZE;
 
-	ChessBoard(Size size) :
+	ChessBoard(Size size, TimeControl timeControl) :
 		SIZE(size), curMoveInd(-1),
 		grid(size.y, vector<Piece*>(size.x, nullptr)),
 		visibleByWhite(size.y, vector<bool>(size.x, false)),
 		visibleByBlack(size.y, vector<bool>(size.x, false)),
-		moves(), curTurn(PlayerTeam::White) {}
+		moves(), curTurn(PlayerTeam::White), realTurn(PlayerTeam::White),
+		promoteTo(PieceType::Queen),
+		withoutTime(false), timeControl(timeControl),
+		remainingTimeWhite(timeControl.time), remainingTimeBlack(timeControl.time)
+	{}
 	
 	~ChessBoard()
 	{
@@ -506,12 +523,18 @@ public:
 		Update();
 	}
 
+	PieceType promoteTo;
 	void MovePiece(Position from, Position to)
 	{
+		if (!withoutTime)
+			ChangeRemainingTime(timeControl.increment);
+
 		Piece* p = _GetPieceAt(from);
 
 		if (curMoveInd + 1 < moves.size())
 		{
+			withoutTime = true;
+
 			for (size_t i = curMoveInd + 1; i < moves.size(); i++)
 				if (moves[i].promoted != nullptr)
 					delete moves[i].promoted;
@@ -570,12 +593,19 @@ public:
 		if (p->GetType() == PieceType::Pawn && (to.y == 0 || to.y == 7))
 		{
 			p->SetPosition(from);
-			grid[to.y][to.x] = moves.back().promoted = MakeQueen(to, p->GetTeam(), this);
+			grid[to.y][to.x] = moves.back().promoted = MakePiece(promoteTo, to, p->GetTeam(), this);
 
-			moves.back().type = PieceMove::MoveType::PromotionQueen;
+			switch (promoteTo)
+			{
+			case PieceType::Knight: moves.back().type = PieceMove::MoveType::PromotionKnight; break;
+			case PieceType::Bishop: moves.back().type = PieceMove::MoveType::PromotionBishop; break;
+			case PieceType::Rook: moves.back().type = PieceMove::MoveType::PromotionRook; break;
+			case PieceType::Queen: moves.back().type = PieceMove::MoveType::PromotionQueen; break;
+			}
 		}
 
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
+		realTurn = curTurn;
 		UpdatePieces();
 
 		moves.back().captured = capture;
@@ -678,8 +708,50 @@ public:
 		return moves.back();
 	}
 
-	const GameState GetGameState() const
+	GameState GetGameState() const
 	{
 		return state;
 	}
+
+	TimeControl GetTimeControl() const
+	{
+		return timeControl;
+	}
+
+	int GetRemainingTimeFor(PlayerTeam team) const
+	{
+		return (team == PlayerTeam::White ? remainingTimeWhite : remainingTimeBlack);
+	}
+	int GetRemainingTime() const
+	{
+		return GetRemainingTimeFor(realTurn);
+	}
+
+	void SetRemainingTimeFor(PlayerTeam team, int time)
+	{
+		(team == PlayerTeam::White ? remainingTimeWhite : remainingTimeBlack) = time;
+
+		if (withoutTime)
+		{
+			remainingTimeWhite = timeControl.time;
+			remainingTimeBlack = timeControl.time;
+		}
+	}
+	void SetRemainingTime(int time)
+	{
+		SetRemainingTimeFor(realTurn, time);
+	}
+
+	void ChangeRemainingTime(int delta)
+	{
+		SetRemainingTime(max(0, GetRemainingTime() + delta));
+
+		if (withoutTime)
+		{
+			remainingTimeWhite = timeControl.time;
+			remainingTimeBlack = timeControl.time;
+		}
+	}
+
+	friend class Game;
 };

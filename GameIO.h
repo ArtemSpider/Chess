@@ -41,6 +41,10 @@ class GameIO
 		}
 		return grid;
 	}
+	static string TimeControlToString(TimeControl timeControl)
+	{
+		return to_string(timeControl.time) + " " + to_string(timeControl.increment);
+	}
 
 	static string ToChessNotation(Position pos)
 	{
@@ -59,19 +63,30 @@ class GameIO
 		return res;
 	}
 public:
-	static void Save(ChessBoard* board, string pathToFile)
+	static void Save(const ChessBoard* board, string pathToFile)
 	{
 		ofstream file;
 		file.open(pathToFile);
+		file << TimeControlToString(board->GetTimeControl()) << endl;
+		file << board->GetRemainingTimeFor(PlayerTeam::White) << " " << board->GetRemainingTimeFor(PlayerTeam::Black) << endl;
 		file << MovesToString(board->GetMovesRecord());
 	}
 
 	static ChessBoard* Load(string pathToFile)
 	{
-		ChessBoard* board = CreateBoard();
-
 		ifstream file;
 		file.open(pathToFile);
+
+		TimeControl tc;
+		file >> tc.time >> tc.increment;
+		ChessBoard* board = CreateBoard(tc);
+
+		int remainingTime;
+
+		file >> remainingTime;
+		board->SetRemainingTimeFor(PlayerTeam::White, remainingTime);
+		file >> remainingTime;
+		board->SetRemainingTimeFor(PlayerTeam::Black, remainingTime);
 
 		string s;
 		while (file >> s)

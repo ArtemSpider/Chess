@@ -4,9 +4,9 @@
 #include "Pieces.h"
 
 
-ChessBoard* CreateBoard()
+ChessBoard* CreateBoard(TimeControl timeControl)
 {
-	ChessBoard* res = new ChessBoard(Size(8, 8));
+	ChessBoard* res = new ChessBoard(Size(8, 8), timeControl);
 
 	vector<vector<Piece*> > grid(8, vector<Piece*>(8, nullptr));
 	for (int j = 0; j < 8; j++)

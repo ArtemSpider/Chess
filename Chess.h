@@ -88,18 +88,43 @@ class Game
 		}
 	}
 
+	sf::Clock moveClock;
+	void Update()
+	{
+		static int remMillis = 0;
+		static PlayerTeam lastTurn = PlayerTeam::White;
+
+		if (board->GetTurn() != lastTurn)
+		{
+			remMillis = 0;
+			lastTurn = board->GetTurn();
+		}
+
+		while (moveClock.getElapsedTime().asMilliseconds() + remMillis >= 1000)
+		{
+			remMillis = (moveClock.getElapsedTime().asMilliseconds() + remMillis) - 1000;
+			board->ChangeRemainingTime(-1);
+
+			moveClock.restart();
+		}
+	}
+
 	void Draw()
 	{
 		graphics.Draw();
 	}
 public:
-	Game() : board(CreateBoard()), graphics(board, &selectedPiece) {}
+	Game(TimeControl timeControl) :
+		board(CreateBoard(timeControl)),
+		graphics(board, &selectedPiece, &board->remainingTimeWhite, &board->remainingTimeBlack)
+	{}
 
 	bool Step()
 	{
 		Input();
 		if (!graphics.GetWindow().isOpen()) return false;
 
+		Update();
 		Draw();
 
 		return true;

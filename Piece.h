@@ -77,9 +77,22 @@ public:
 };
 
 
-Piece* MakeQueen(Position pos, PlayerTeam team, const ChessBoard* board);
+Piece* MakePawn(Position pos, PlayerTeam team, const ChessBoard* board);
 Piece* MakeKnight(Position pos, PlayerTeam team, const ChessBoard* board);
 Piece* MakeBishop(Position pos, PlayerTeam team, const ChessBoard* board);
 Piece* MakeRook(Position pos, PlayerTeam team, const ChessBoard* board);
 Piece* MakeQueen(Position pos, PlayerTeam team, const ChessBoard* board);
 Piece* MakeKing(Position pos, PlayerTeam team, const ChessBoard* board);
+
+Piece* MakePiece(PieceType type, Position pos, PlayerTeam team, const ChessBoard* board)
+{
+	switch (type)
+	{
+	case PieceType::Pawn: return MakePawn(pos, team, board); break;
+	case PieceType::Knight: return MakeKnight(pos, team, board); break;
+	case PieceType::Bishop: return MakeBishop(pos, team, board); break;
+	case PieceType::Rook: return MakeRook(pos, team, board); break;
+	case PieceType::Queen: return MakeQueen(pos, team, board); break;
+	case PieceType::King: return MakeKing(pos, team, board); break;
+	}
+}

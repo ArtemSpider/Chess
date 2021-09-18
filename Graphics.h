@@ -19,49 +19,12 @@ class Graphics
 	const ChessBoard* board;
 	const Piece** selectedPiecePtr;
 
-	optional<Position> promotionWindowPosition;
 	optional<GameState> resultWindowData;
 
 	sf::Font font;
-public:
-	static const Size SQUARE_SIZE;
 
-	static const sf::Color WHITE_COLOR;
-	static const sf::Color BLACK_COLOR;
-
-	static const string PATH_TO_FONT;
-
-
-	Graphics(const ChessBoard* board, const Piece** selectedPiece) :
-		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
-		board(board), selectedPiecePtr(selectedPiece), font()
+	void DrawBoard()
 	{
-		window.setFramerateLimit(60);
-
-		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
-		font.loadFromFile(PATH_TO_FONT);
-
-		const int imageOrder[] = { 5, 3, 2, 4, 1, 0 };
-
-		for (int i = 0; i < (int)PieceType::Count; i++)
-		{
-			whitePieces.emplace_back(piecesTexture,
-				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
-			whitePieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
-		}
-
-		for (int i = 0; i < (int)PieceType::Count; i++)
-		{
-			blackPieces.emplace_back(piecesTexture,
-				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
-			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
-		}
-	}
-
-	void Draw()
-	{
-		window.clear();
-
 		sf::RectangleShape sq(Point<float>(SQUARE_SIZE).AsVector2());
 		for (int i = 0; i < board->SIZE.y; i++)
 		{
@@ -119,7 +82,7 @@ public:
 			resultText.setFont(font);
 			resultText.setCharacterSize(40);
 			resultText.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2) - Point<float>(0.f, SQUARE_SIZE.y * 0.2f));
-			
+
 			switch (resultWindowData->state)
 			{
 			case GameState::State::WhiteWon: resultText.setString("White won"); break;
@@ -129,7 +92,7 @@ public:
 
 			sf::FloatRect textRect = resultText.getLocalBounds();
 			resultText.setOrigin(textRect.left + textRect.width / 2.0f,
-								 textRect.top + textRect.height / 2.0f);
+				textRect.top + textRect.height / 2.0f);
 
 			window.draw(resultText);
 
@@ -147,10 +110,94 @@ public:
 
 			window.draw(reasonText);
 		}
-		else if (promotionWindowPosition.has_value())
-		{
+	}
 
+
+	string TimeToString(int time)
+	{
+		if (time / 3600 >= 1)	// mote then an hour
+			return to_string(time / 3600) + ":" + to_string(time % 3600 / 60) + ":" + to_string(time % 60);
+		return to_string(time % 3600 / 60) + ":" + (time % 60 < 10 ? "0" : "") + to_string(time % 60);
+	}
+
+	const int* remainingTimeWhite;	// in seconds
+	const int* remainingTimeBlack;	// in seconds
+	void DrawSide()
+	{
+		// drawing remaining time
+		{
+			sf::Text time;
+			time.setFillColor(sf::Color::White);
+			time.setFont(font);
+			time.setCharacterSize(40);
+			time.setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
+				SQUARE_SIZE.y / 2.f));
+			time.setString(TimeToString(*remainingTimeBlack));
+
+			sf::FloatRect textRect = time.getLocalBounds();
+			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+
+			window.draw(time);
 		}
+		{
+			sf::Text time;
+			time.setFillColor(sf::Color::White);
+			time.setFont(font);
+			time.setCharacterSize(40);
+			time.setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
+				SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
+			time.setString(TimeToString(*remainingTimeWhite));
+
+			sf::FloatRect textRect = time.getLocalBounds();
+			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+
+			window.draw(time);
+		}
+	}
+public:
+	static const Size SQUARE_SIZE;
+
+	static const sf::Color WHITE_COLOR;
+	static const sf::Color BLACK_COLOR;
+
+	static const string PATH_TO_FONT;
+
+
+	Graphics(const ChessBoard* board, const Piece** selectedPiece, const int* remainingTimeWhite, const int* remainingTimeBlack) :
+		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x + 200, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
+		board(board), selectedPiecePtr(selectedPiece), font(),
+		remainingTimeWhite(remainingTimeWhite), remainingTimeBlack(remainingTimeBlack)
+	{
+		window.setFramerateLimit(60);
+
+		piecesTexture.loadFromFile("images/Pieces.png", sf::IntRect(0, 0, 1020, 340));
+		font.loadFromFile(PATH_TO_FONT);
+
+		const int imageOrder[] = { 5, 3, 2, 4, 1, 0 };
+
+		for (int i = 0; i < (int)PieceType::Count; i++)
+		{
+			whitePieces.emplace_back(piecesTexture,
+				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, 0, SQUARE_SIZE.x, SQUARE_SIZE.y));
+			whitePieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
+		}
+
+		for (int i = 0; i < (int)PieceType::Count; i++)
+		{
+			blackPieces.emplace_back(piecesTexture,
+				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
+			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
+		}
+	}
+
+	void Draw()
+	{
+		window.clear();
+
+		DrawBoard();
+		DrawSide();
 
 		window.display();
 	}
@@ -165,15 +212,6 @@ public:
 		this->board = board;
 	}
 
-	void SetPromotionWindowPosition(Position pos)
-	{
-		promotionWindowPosition = pos;
-	}
-	void ResetPromotionWindowPosition()
-	{
-		promotionWindowPosition.reset();
-	}
-
 	void SetResultScreen(GameState result)
 	{
 		resultWindowData = result;
@@ -181,6 +219,11 @@ public:
 	void ResetResultScreen()
 	{
 		resultWindowData.reset();
+	}
+
+	void FlipBoard() // TODO
+	{
+
 	}
 };
 
