@@ -34,9 +34,6 @@ class Game
 	{
 		selectedPiece = nullptr;
 		board->MovePiece(piece->GetPosition(), to);
-
-		if (board->GetGameState().state != GameState::State::Game)
-			graphics.SetResultScreen(board->GetGameState());
 	}
 
 	const Piece* selectedPiece;
@@ -107,6 +104,11 @@ class Game
 
 			moveClock.restart();
 		}
+
+		if (board->GetGameState().state != GameState::State::Game)
+			graphics.SetResultScreen(board->GetGameState());
+		else
+			graphics.ResetResultScreen();
 	}
 
 	void Draw()
