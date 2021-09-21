@@ -81,12 +81,8 @@ public:
 		file >> tc.time >> tc.increment;
 		ChessBoard* board = CreateBoard(tc);
 
-		int remainingTime;
-
-		file >> remainingTime;
-		board->SetRemainingTimeFor(PlayerTeam::White, remainingTime);
-		file >> remainingTime;
-		board->SetRemainingTimeFor(PlayerTeam::Black, remainingTime);
+		int remainingTimeWhite, remainingTimeBlack;
+		file >> remainingTimeWhite >> remainingTimeBlack;
 
 		string s;
 		while (file >> s)
@@ -96,6 +92,9 @@ public:
 
 			board->MovePiece(from, to);
 		}
+
+		board->SetRemainingTimeFor(PlayerTeam::White, remainingTimeWhite);
+		board->SetRemainingTimeFor(PlayerTeam::Black, remainingTimeBlack);
 
 		return board;
 	}

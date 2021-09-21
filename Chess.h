@@ -24,6 +24,9 @@ class Game
 
 		board = GameIO::Load(from);
 		graphics.SetChessBoard(board);
+
+		graphics.SetRemainingTimeWhite(&board->remainingTimeWhite);
+		graphics.SetRemainingTimeBlack(&board->remainingTimeBlack);
 	}
 	void SaveBoard(string to)
 	{

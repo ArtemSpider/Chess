@@ -212,6 +212,15 @@ public:
 		this->board = board;
 	}
 
+	void SetRemainingTimeWhite(const int* time)
+	{
+		remainingTimeWhite = time;
+	}
+	void SetRemainingTimeBlack(const int* time)
+	{
+		remainingTimeBlack = time;
+	}
+
 	void SetResultScreen(GameState result)
 	{
 		resultWindowData = result;
