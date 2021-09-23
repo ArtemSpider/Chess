@@ -152,6 +152,8 @@ class ChessBoard
 	}
 	void AddCastles()
 	{
+		if (IsCheck()) return;
+
 		Piece* king = nullptr;
 		Piece* leftRook = nullptr;
 		Piece* rightRook = nullptr;
