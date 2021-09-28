@@ -151,7 +151,7 @@
   <ItemGroup>
     <ClInclude Include="Board.h" />
     <ClInclude Include="Boards.h" />
-    <ClInclude Include="Chess.h" />
+    <ClInclude Include="Controller.h" />
     <ClInclude Include="Coords.h" />
     <ClInclude Include="GameIO.h" />
     <ClInclude Include="Graphics.h" />
@@ -159,6 +159,8 @@
     <ClInclude Include="Piece.h" />
     <ClInclude Include="PieceMove.h" />
     <ClInclude Include="Pieces.h" />
+    <ClInclude Include="TextBox.h" />
+    <ClInclude Include="TextBoxController.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

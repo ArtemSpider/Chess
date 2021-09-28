@@ -67,6 +67,8 @@ public:
 	{
 		ofstream file;
 		file.open(pathToFile);
+		if (!file.good())
+			throw "file not found";
 		file << TimeControlToString(board->GetTimeControl()) << endl;
 		file << board->GetRemainingTimeFor(PlayerTeam::White) << " " << board->GetRemainingTimeFor(PlayerTeam::Black) << endl;
 		file << MovesToString(board->GetMovesRecord());
@@ -76,6 +78,8 @@ public:
 	{
 		ifstream file;
 		file.open(pathToFile);
+		if (!file.good())
+			throw "file not found";
 
 		TimeControl tc;
 		file >> tc.time >> tc.increment;

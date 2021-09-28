@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "Board.h"
+#include "TextBox.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -13,11 +14,16 @@ class Graphics
 
 	sf::RenderWindow window;
 
-	vector<sf::Sprite> whitePieces; // in the order of PieceType
+	vector<sf::Sprite> whitePieces;		// array of pieces sprites in the order of PieceType
 	vector<sf::Sprite> blackPieces;
 
 	const ChessBoard* board;
-	const Piece** selectedPiecePtr;
+	const Piece** selectedPiecePtr;		// pointer to the selected piece
+
+	const int* remainingTimeWhite;		// displayed in seconds
+	const int* remainingTimeBlack;		// displayed in seconds
+
+	TextBox* textBox;					// displayed TextBox
 
 	optional<GameState> resultWindowData;
 
@@ -60,7 +66,54 @@ class Graphics
 				window.draw(circle);
 			}
 		}
+	}
 
+
+	string TimeToString(int time)
+	{
+		if (time / 3600 >= 1)	// mote then an hour
+			return to_string(time / 3600) + ":" + to_string(time % 3600 / 60) + ":" + to_string(time % 60);
+		return to_string(time % 3600 / 60) + ":" + (time % 60 < 10 ? "0" : "") + to_string(time % 60);
+	}
+
+	void DrawSide()
+	{
+		// drawing remaining time
+		{
+			sf::Text time;
+			time.setFillColor(sf::Color::White);
+			time.setFont(font);
+			time.setCharacterSize(40);
+			time.setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
+				SQUARE_SIZE.y / 2.f));
+			time.setString(TimeToString(*remainingTimeBlack));
+
+			sf::FloatRect textRect = time.getLocalBounds();
+			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+
+			window.draw(time);
+		}
+		{
+			sf::Text time;
+			time.setFillColor(sf::Color::White);
+			time.setFont(font);
+			time.setCharacterSize(40);
+			time.setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
+				SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
+			time.setString(TimeToString(*remainingTimeWhite));
+
+			sf::FloatRect textRect = time.getLocalBounds();
+			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+
+			window.draw(time);
+		}
+	}
+
+
+	void DrawMenus()
+	{
 		if (resultWindowData.has_value())
 		{
 			assert(resultWindowData->state != GameState::State::Game);
@@ -110,51 +163,9 @@ class Graphics
 
 			window.draw(reasonText);
 		}
-	}
 
-
-	string TimeToString(int time)
-	{
-		if (time / 3600 >= 1)	// mote then an hour
-			return to_string(time / 3600) + ":" + to_string(time % 3600 / 60) + ":" + to_string(time % 60);
-		return to_string(time % 3600 / 60) + ":" + (time % 60 < 10 ? "0" : "") + to_string(time % 60);
-	}
-
-	const int* remainingTimeWhite;	// in seconds
-	const int* remainingTimeBlack;	// in seconds
-	void DrawSide()
-	{
-		// drawing remaining time
-		{
-			sf::Text time;
-			time.setFillColor(sf::Color::White);
-			time.setFont(font);
-			time.setCharacterSize(40);
-			time.setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
-				SQUARE_SIZE.y / 2.f));
-			time.setString(TimeToString(*remainingTimeBlack));
-
-			sf::FloatRect textRect = time.getLocalBounds();
-			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
-
-			window.draw(time);
-		}
-		{
-			sf::Text time;
-			time.setFillColor(sf::Color::White);
-			time.setFont(font);
-			time.setCharacterSize(40);
-			time.setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
-				SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
-			time.setString(TimeToString(*remainingTimeWhite));
-
-			sf::FloatRect textRect = time.getLocalBounds();
-			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
-
-			window.draw(time);
-		}
+		if (textBox != nullptr)
+			window.draw(*textBox);
 	}
 public:
 	static const Size SQUARE_SIZE;
@@ -168,7 +179,8 @@ public:
 	Graphics(const ChessBoard* board, const Piece** selectedPiece, const int* remainingTimeWhite, const int* remainingTimeBlack) :
 		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x + 200, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
 		board(board), selectedPiecePtr(selectedPiece), font(),
-		remainingTimeWhite(remainingTimeWhite), remainingTimeBlack(remainingTimeBlack)
+		remainingTimeWhite(remainingTimeWhite), remainingTimeBlack(remainingTimeBlack),
+		textBox(nullptr)
 	{
 		window.setFramerateLimit(60);
 
@@ -198,6 +210,7 @@ public:
 
 		DrawBoard();
 		DrawSide();
+		DrawMenus();
 
 		window.display();
 	}
@@ -228,6 +241,29 @@ public:
 	void ResetResultScreen()
 	{
 		resultWindowData.reset();
+	}
+
+	void AddTextBox(TextBox* tb)
+	{
+		if (textBox != nullptr)
+			delete textBox;
+		textBox = tb;
+	}
+	TextBox* GetTextBox()
+	{
+		return textBox;
+	}
+	sf::String RemoveTextBox()
+	{
+		sf::String res = textBox->getString();
+		delete textBox;
+		textBox = nullptr;
+		return res;
+	}
+
+	sf::Font& GetFont()
+	{
+		return font;
 	}
 
 	void FlipBoard() // TODO

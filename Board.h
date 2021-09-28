@@ -331,7 +331,7 @@ public:
 		visibleByWhite(size.y, vector<bool>(size.x, false)),
 		visibleByBlack(size.y, vector<bool>(size.x, false)),
 		moves(), curTurn(PlayerTeam::White), realTurn(PlayerTeam::White),
-		promoteTo(PieceType::Queen),
+		promoteToWhite(PieceType::Queen), promoteToBlack(PieceType::Queen),
 		withoutTime(false), timeControl(timeControl),
 		remainingTimeWhite(timeControl.time), remainingTimeBlack(timeControl.time)
 	{}
@@ -525,7 +525,8 @@ public:
 		Update();
 	}
 
-	PieceType promoteTo;
+	PieceType promoteToWhite;	// what type white pawn promotes to
+	PieceType promoteToBlack;	// what type black pawn promotes to
 	void MovePiece(Position from, Position to)
 	{
 		if (!withoutTime)
@@ -594,6 +595,8 @@ public:
 		// promotion
 		if (p->GetType() == PieceType::Pawn && (to.y == 0 || to.y == 7))
 		{
+			PieceType promoteTo = (curTurn == PlayerTeam::White ? promoteToWhite : promoteToBlack);
+
 			p->SetPosition(from);
 			grid[to.y][to.x] = moves.back().promoted = MakePiece(promoteTo, to, p->GetTeam(), this);
 
