@@ -145,22 +145,29 @@ class Game
 					tb->setSelected(true);
 					graphics.AddTextBox(tb);
 				}
-				else TextBoxController::CheckEvent(graphics.GetTextBox(), event);
-
-				if (event.type == sf::Event::KeyPressed)
+				else
 				{
-					if (event.key.code == sf::Keyboard::Enter)
+					auto res = TextBoxController::CheckEvent(graphics.GetTextBox(), event);
+					if (res == TextBoxController::ActionType::LostFocus)
 					{
-						std::string path = graphics.RemoveTextBox();
-						if (!path.empty())
+						inputState = InputState::Moves;
+						graphics.RemoveTextBox();
+					}
+					else if (event.type == sf::Event::KeyPressed)
+					{
+						if (event.key.code == sf::Keyboard::Enter)
 						{
-							if (!path.ends_with(".board"))
-								path += ".board";
-							if (inputState == InputState::FilePathSave)
-								SaveBoard(path);
-							else
-								LoadBoard(path);
-							inputState = InputState::Moves;
+							std::string path = graphics.RemoveTextBox();
+							if (!path.empty())
+							{
+								if (!path.ends_with(".board"))
+									path += ".board";
+								if (inputState == InputState::FilePathSave)
+									SaveBoard(path);
+								else
+									LoadBoard(path);
+								inputState = InputState::Moves;
+							}
 						}
 					}
 				}

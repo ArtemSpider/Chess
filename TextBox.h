@@ -10,15 +10,12 @@ class TextBox : public sf::Drawable, public sf::Transformable
 private:
 	sf::String string;							// string before transformations
 	mutable sf::Text text;						// displayed text
+	mutable sf::RectangleShape outlineRect;		// displayed box
 
 	std::optional<size_t> maxSize;				// maximum number of symbols in the displayed string
 
-	bool selected;								// is TextBox selected
-
 	sf::Vector2f size;							// size of the TextBox
-	sf::Vector2f padding;						// padding from the middle-left
-
-	sf::Color backgroundColor;
+	bool selected;								// is TextBox selected
 
 
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override
@@ -30,24 +27,20 @@ private:
 		if (isSelected() && !isFull())
 			str += '_';
 
-		text.setPosition(padding);
 		text.setString(str);
+		outlineRect.setSize(size);
 
-
-		sf::RectangleShape rect;
-		rect.setSize(size);
-		rect.setFillColor(backgroundColor);
-		rect.setOutlineColor(sf::Color::White);
-		rect.setOutlineThickness(1);
-
-
-		target.draw(rect, states);
+		target.draw(outlineRect, states);
 		target.draw(text, states);
 	}
 public:
 	TextBox(const sf::Font& font, unsigned int characterSize = 30) :
-		text("", font, characterSize), selected(false), backgroundColor(sf::Color::Black)
-	{}
+		text("", font, characterSize), selected(false)
+	{
+		setBackgroundColor(sf::Color::Black);
+		setOutlineColor(sf::Color::White);
+		setOutlineThickness(1.f);
+	}
 	~TextBox() {}
 
 
@@ -119,7 +112,7 @@ public:
 	// set padding betweeen position of the TextBox and the text
 	void setPadding(sf::Vector2f padding)
 	{
-		this->padding = padding;
+		text.setPosition(padding);
 	}
 	void setText(sf::Text text)
 	{
@@ -139,7 +132,15 @@ public:
 	}
 	void setBackgroundColor(sf::Color backgroundColor)
 	{
-		this->backgroundColor = backgroundColor;
+		outlineRect.setFillColor(backgroundColor);
+	}
+	void setOutlineColor(sf::Color outlineColor)
+	{
+		outlineRect.setOutlineColor(outlineColor);
+	}
+	void setOutlineThickness(float thickness)
+	{
+		outlineRect.setOutlineThickness(thickness);
 	}
 
 	// set max number of symbols of the displayed string
@@ -174,11 +175,11 @@ public:
 	}
 	sf::Vector2f getTextBoxSize() const
 	{
-		return size;
+		return sf::Vector2f(size.x * getScale().x, size.y * getScale().y);
 	}
 	sf::FloatRect getBounds() const
 	{
-		return sf::FloatRect(getPosition(), getTextBoxSize());
+		return sf::FloatRect(getPosition() - getOrigin(), getTextBoxSize());
 	}
 	size_t getStringSize() const
 	{
@@ -192,17 +193,37 @@ public:
 	{
 		return text;
 	}
+	sf::RectangleShape& getOutline()
+	{
+		return outlineRect;
+	}
+	const sf::RectangleShape& getOutline() const
+	{
+		return outlineRect;
+	}
 	const sf::Font* getFont() const
 	{
 		text.getFont();
 	}
-	unsigned getCharacterSize()
+	unsigned getCharacterSize() const
 	{
 		return text.getCharacterSize();
 	}
-	sf::Uint32 getTextStyle()
+	sf::Uint32 getTextStyle() const
 	{
 		text.getStyle();
+	}
+	sf::Color getBackgroundColor() const
+	{
+		return outlineRect.getFillColor();
+	}
+	sf::Color getOutlineColor() const
+	{
+		return outlineRect.getOutlineColor();
+	}
+	float getOutlineThickness() const
+	{
+		return outlineRect.getOutlineThickness();
 	}
 	// maximum size of this sf::String
 	std::optional<size_t> getMaxStringSize() const
