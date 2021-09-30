@@ -114,11 +114,10 @@ class Graphics
 
 	void DrawMenus()
 	{
-		if (textBox != nullptr)
-			window.draw(*textBox);
-
 		if (resultBox != nullptr)
 			window.draw(*resultBox);
+		if (textBox != nullptr)
+			window.draw(*textBox);
 	}
 public:
 	static const Size SQUARE_SIZE;

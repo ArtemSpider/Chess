@@ -71,7 +71,7 @@ public:
 	}
 	void SetReasonCharacterSize(unsigned size)
 	{
-		resultText.setCharacterSize(size);
+		reasonText.setCharacterSize(size);
 	}
 	void SetResultTextPadding(PositionF padding)
 	{
