@@ -85,11 +85,11 @@ public:
 	// automatically sets size
 	void autoSizeX(float widthMultiplyer = 0.75f)
 	{
-		size.x = text.getCharacterSize() * maxSize.value_or(10) * widthMultiplyer;
+		size.x = text.getPosition().x + text.getCharacterSize() * maxSize.value_or(10) * widthMultiplyer;
 	}
 	void autoSizeY(float heightMultiplyer = 1.25f)
 	{
-		size.y = text.getCharacterSize() * heightMultiplyer;
+		size.y = text.getPosition().y + text.getCharacterSize() * heightMultiplyer;
 	}
 	void autoSize(float widthMultiplyer = 0.75f, float heightMultiplyer = 1.25f)
 	{
