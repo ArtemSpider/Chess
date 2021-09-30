@@ -4,6 +4,7 @@
 
 #include "Board.h"
 #include "TextBox.h"
+#include "ResultBox.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -24,8 +25,7 @@ class Graphics
 	const int* remainingTimeBlack;		// displayed in seconds
 
 	TextBox* textBox;					// displayed TextBox
-
-	optional<GameState> resultWindowData;
+	ResultBox* resultBox;				// displayed result screen
 
 	sf::Font font;
 
@@ -114,58 +114,11 @@ class Graphics
 
 	void DrawMenus()
 	{
-		if (resultWindowData.has_value())
-		{
-			assert(resultWindowData->state != GameState::State::Game);
-
-
-			Size rectSize(SQUARE_SIZE.x * 3.0f, SQUARE_SIZE.y * 1.5f);
-
-			sf::RectangleShape rect;
-			rect.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2));
-			rect.setSize(Point<float>(rectSize));
-			rect.setOrigin(Point<float>(rectSize / 2));
-			rect.setFillColor(sf::Color::White);
-
-			window.draw(rect);
-
-
-			sf::Text resultText;
-			resultText.setFillColor(sf::Color::Black);
-			resultText.setFont(font);
-			resultText.setCharacterSize(40);
-			resultText.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2) - Point<float>(0.f, SQUARE_SIZE.y * 0.2f));
-
-			switch (resultWindowData->state)
-			{
-			case GameState::State::WhiteWon: resultText.setString("White won"); break;
-			case GameState::State::BlackWon: resultText.setString("Black won"); break;
-			case GameState::State::Draw:	 resultText.setString("Draw"); break;
-			}
-
-			sf::FloatRect textRect = resultText.getLocalBounds();
-			resultText.setOrigin(textRect.left + textRect.width / 2.0f,
-				textRect.top + textRect.height / 2.0f);
-
-			window.draw(resultText);
-
-
-			sf::Text reasonText;
-			reasonText.setFillColor(sf::Color::Black);
-			reasonText.setFont(font);
-			reasonText.setCharacterSize(25);
-			reasonText.setPosition(Point<float>(SQUARE_SIZE * board->SIZE / 2) + Point<float>(0.f, SQUARE_SIZE.y * 0.3f));
-			reasonText.setString("by " + resultWindowData->reason);
-
-			textRect = reasonText.getLocalBounds();
-			reasonText.setOrigin(textRect.left + textRect.width / 2.0f,
-				textRect.top + textRect.height / 2.0f);
-
-			window.draw(reasonText);
-		}
-
 		if (textBox != nullptr)
 			window.draw(*textBox);
+
+		if (resultBox != nullptr)
+			window.draw(*resultBox);
 	}
 public:
 	static const Size SQUARE_SIZE;
@@ -180,7 +133,7 @@ public:
 		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x + 200, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
 		board(board), selectedPiecePtr(selectedPiece), font(),
 		remainingTimeWhite(remainingTimeWhite), remainingTimeBlack(remainingTimeBlack),
-		textBox(nullptr)
+		textBox(nullptr), resultBox(nullptr)
 	{
 		window.setFramerateLimit(60);
 
@@ -234,17 +187,39 @@ public:
 		remainingTimeBlack = time;
 	}
 
-	void SetResultScreen(GameState result)
+	void AddResultBox(GameState result)
 	{
-		resultWindowData = result;
+		if (resultBox == nullptr)
+		{
+			resultBox = new ResultBox(font, PositionF(SQUARE_SIZE * board->SIZE / 2), SizeF(3.0f, 1.5f) * SQUARE_SIZE, result);
+			resultBox->SetResultTextPadding(PositionF(0.f, -SQUARE_SIZE.y * 0.2f));
+			resultBox->SetReasonTextPadding(PositionF(0.f, +SQUARE_SIZE.y * 0.3f));
+			resultBox->SetResultCharacterSize(40);
+			resultBox->SetReasonCharacterSize(25);
+		}
+		else
+			resultBox->SetState(result);
 	}
-	void ResetResultScreen()
+	ResultBox* GetResultBox()
 	{
-		resultWindowData.reset();
+		return resultBox;
+	}
+	void RemoveResultBox()
+	{
+		delete resultBox;
+		resultBox = nullptr;
 	}
 
-	void AddTextBox(TextBox* tb)
+	void AddTextBox()
 	{
+		TextBox* tb = new TextBox(GetFont());
+		tb->setPadding({ 6.f, 0.f });
+		tb->setMaxStringSize(16);
+		tb->autoSize();
+		tb->setOrigin(tb->getTextBoxSize() / 2.f);
+		tb->setPosition({ 8.f * Graphics::SQUARE_SIZE.x / 2.f, 8.f * Graphics::SQUARE_SIZE.y / 2.f });
+		tb->setSelected(true);
+
 		if (textBox != nullptr)
 			delete textBox;
 		textBox = tb;

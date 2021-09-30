@@ -135,16 +135,7 @@ class Game
 			else if (inputState == InputState::FilePathSave || inputState == InputState::FilePathLoad)
 			{
 				if (graphics.GetTextBox() == nullptr)
-				{
-					TextBox* tb = new TextBox(graphics.GetFont());
-					tb->setPadding({ 6.f, 0.f });
-					tb->setMaxStringSize(16);
-					tb->autoSize();
-					tb->setOrigin(tb->getTextBoxSize() / 2.f);
-					tb->setPosition({ 8.f * Graphics::SQUARE_SIZE.x / 2.f, 8.f * Graphics::SQUARE_SIZE.y / 2.f });
-					tb->setSelected(true);
-					graphics.AddTextBox(tb);
-				}
+					graphics.AddTextBox();
 				else
 				{
 					auto res = TextBoxController::CheckEvent(graphics.GetTextBox(), event);
@@ -196,9 +187,9 @@ class Game
 		}
 
 		if (board->GetGameState().state != GameState::State::Game)
-			graphics.SetResultScreen(board->GetGameState());
+			graphics.AddResultBox(board->GetGameState());
 		else
-			graphics.ResetResultScreen();
+			graphics.RemoveResultBox();
 	}
 
 	void Draw()

@@ -377,3 +377,6 @@ public:
 
 typedef Point<int> Position;
 typedef Point<int> Size;
+
+typedef Point<float> PositionF;
+typedef Point<float> SizeF;

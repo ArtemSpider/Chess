@@ -159,6 +159,7 @@
     <ClInclude Include="Piece.h" />
     <ClInclude Include="PieceMove.h" />
     <ClInclude Include="Pieces.h" />
+    <ClInclude Include="ResultBox.h" />
     <ClInclude Include="TextBox.h" />
     <ClInclude Include="TextBoxController.h" />
   </ItemGroup>
