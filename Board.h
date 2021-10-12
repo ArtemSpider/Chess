@@ -37,6 +37,8 @@ class ChessBoard
 {
 	vector<vector<Piece*> > grid;
 
+	int turnsCount;             // for 50-move rule
+	
 	int curMoveInd;				// index of a move on a grid, -1 on the first move
 	vector<PieceMove> moves;	// record of all moves
 
@@ -273,10 +275,11 @@ class ChessBoard
 
 	GameState CheckDraw() const
 	{
-		// Егорка сделай пж
+		if (IsStalemate())
+			return GameState(GameState::State::Draw, "Stalemate");
+		else if (turnsCount == 50)
+			return GameState(GameState::State::Draw, "50-move rule");
 
-		// ф-ция возвращает GameState() если не ничья и игра продолжается
-		// иначе GameState(GameState::State::Draw, "какая-то причина")
 
 		return GameState();
 	}
@@ -622,6 +625,11 @@ public:
 			moves.back().mate = IsMate();
 
 		UpdateState();
+
+		if (capture == nullptr || (p->GetType() != PieceType::Pawn && capture == nullptr))
+			turnsCount++;
+		else
+			turnsCount = 0;
 	}
 
 	bool IsCheck() const
