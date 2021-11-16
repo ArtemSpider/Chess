@@ -2,9 +2,11 @@
 
 #include <optional>
 
+#include "DrawableArray.h"
 #include "Board.h"
-#include "TextBox.h"
 #include "ResultBox.h"
+#include "TextBox.h"
+#include "Button.h"
 
 #include <SFML/Graphics.hpp>
 
@@ -23,6 +25,13 @@ class Graphics
 
 	const int* remainingTimeWhite;		// displayed in seconds
 	const int* remainingTimeBlack;		// displayed in seconds
+
+	/*
+	* buttons for choosing what type piece promotes to
+	* first are white pieces in order of PieceType(except Pawn and King),
+	* then black pieces in the same order
+	*/
+	vector<Button*> promoteToButtons;	
 
 	TextBox* textBox;					// displayed TextBox
 	ResultBox* resultBox;				// displayed result screen
@@ -79,36 +88,54 @@ class Graphics
 	void DrawSide()
 	{
 		// drawing remaining time
+		if (!board->WithoutTime())
 		{
-			sf::Text time;
-			time.setFillColor(sf::Color::White);
-			time.setFont(font);
-			time.setCharacterSize(40);
-			time.setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
-				SQUARE_SIZE.y / 2.f));
-			time.setString(TimeToString(*remainingTimeBlack));
+			{
+				sf::Text time;
+				time.setFillColor(sf::Color::White);
+				time.setFont(font);
+				time.setCharacterSize(40);
+				time.setPosition(Point<float>(
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f,
+					SQUARE_SIZE.y / 2.f));
+				time.setString(TimeToString(*remainingTimeBlack));
 
-			sf::FloatRect textRect = time.getLocalBounds();
-			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+				sf::FloatRect textRect = time.getLocalBounds();
+				time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
 
-			window.draw(time);
+				window.draw(time);
+			}
+			{
+				sf::Text time;
+				time.setFillColor(sf::Color::White);
+				time.setFont(font);
+				time.setCharacterSize(40);
+				time.setPosition(Point<float>(
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f,
+					SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
+				time.setString(TimeToString(*remainingTimeWhite));
+
+				sf::FloatRect textRect = time.getLocalBounds();
+				time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
+
+				window.draw(time);
+			}
 		}
+		
+		for (int i = 0; i < promoteToButtons.size() / 2; i++)
 		{
-			sf::Text time;
-			time.setFillColor(sf::Color::White);
-			time.setFont(font);
-			time.setCharacterSize(40);
-			time.setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f, 
-				SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
-			time.setString(TimeToString(*remainingTimeWhite));
-
-			sf::FloatRect textRect = time.getLocalBounds();
-			time.setOrigin(0.f, textRect.top + textRect.height / 2.0f);
-
-			window.draw(time);
+			promoteToButtons[i]->setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f + i * 40.f,
+				SQUARE_SIZE.y));
 		}
+		for (int i = promoteToButtons.size() / 2; i < promoteToButtons.size(); i++)
+		{
+			promoteToButtons[i]->setPosition(Point<float>(
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f + (i - promoteToButtons.size() / 2) * 40.f,
+				SQUARE_SIZE.y * (board->SIZE.y - 1)));
+		}
+		for (auto& b : promoteToButtons)
+			window.draw(*b);
 	}
 
 
@@ -154,6 +181,48 @@ public:
 				sf::IntRect(imageOrder[i] * SQUARE_SIZE.x, SQUARE_SIZE.y, SQUARE_SIZE.x, SQUARE_SIZE.y));
 			blackPieces.back().setOrigin(Point<float>(SQUARE_SIZE / 2));
 		}
+
+
+		// buttons for choosing promotion type
+		for (int i = (int)PieceType::Knight; i <= (int)PieceType::Queen; i++)
+		{
+			sf::RectangleShape* rect1 = new sf::RectangleShape(sf::Vector2f(40.f, 40.f));
+			sf::Sprite* spr1 = new sf::Sprite(blackPieces[i]);
+			spr1->setScale(0.3f, 0.3f);
+			spr1->setPosition(20.f, 20.f);
+
+			sf::RectangleShape* rect2 = new sf::RectangleShape(sf::Vector2f(40.f, 40.f));
+			rect2->setFillColor(sf::Color::Blue);
+			sf::Sprite* spr2 = new sf::Sprite(blackPieces[i]);
+			spr2->setScale(0.3f, 0.3f);
+			spr2->setPosition(20.f, 20.f);
+
+			promoteToButtons.push_back(new Button(new DrawableArray({ rect1, spr1 }), new DrawableArray({ rect2, spr2 }), sf::Vector2f(40.f, 40.f)));
+			promoteToButtons.back()->canBeUnpressed = false;
+		}
+		for (int i = (int)PieceType::Knight; i <= (int)PieceType::Queen; i++)
+		{
+			sf::RectangleShape* rect1 = new sf::RectangleShape(sf::Vector2f(40.f, 40.f));
+			sf::Sprite* spr1 = new sf::Sprite(whitePieces[i]);
+			spr1->setScale(0.3f, 0.3f);
+			spr1->setPosition(20.f, 20.f);
+
+			sf::RectangleShape* rect2 = new sf::RectangleShape(sf::Vector2f(40.f, 40.f));
+			rect2->setFillColor(sf::Color::Blue);
+			sf::Sprite* spr2 = new sf::Sprite(whitePieces[i]);
+			spr2->setScale(0.3f, 0.3f);
+			spr2->setPosition(20.f, 20.f);
+
+			promoteToButtons.push_back(new Button(new DrawableArray({ rect1, spr1 }), new DrawableArray({ rect2, spr2 }), sf::Vector2f(40.f, 40.f)));
+			promoteToButtons.back()->setOrigin(0.f, 40.f);
+			promoteToButtons.back()->canBeUnpressed = false;
+		}
+		promoteToButtons[promoteToButtons.size() / 2 - 1]->press();
+		promoteToButtons.back()->press();
+
+		for (int i = 1; i < promoteToButtons.size() / 2; i++)
+			promoteToButtons[i]->connect(promoteToButtons[0]),
+			promoteToButtons[i + promoteToButtons.size() / 2]->connect(promoteToButtons[promoteToButtons.size() / 2]);
 	}
 
 	void Draw()
@@ -233,6 +302,16 @@ public:
 		delete textBox;
 		textBox = nullptr;
 		return res;
+	}
+
+	/*
+	* buttons for choosing what type piece promotes to
+	* first are white pieces in order of PieceType(except Pawn and King),
+	* then black pieces in the same order
+	*/
+	vector<Button*> GetPromotesToButtons() const
+	{
+		return promoteToButtons;
 	}
 
 	sf::Font& GetFont()

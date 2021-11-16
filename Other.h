@@ -19,7 +19,7 @@ PlayerTeam OtherTeam(PlayerTeam team)
 
 enum class PieceType
 {
-	Pawn,
+	Pawn = 0,
 	Knight,
 	Bishop,
 	Rook,

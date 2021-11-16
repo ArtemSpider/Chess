@@ -56,9 +56,6 @@
     <ClInclude Include="GameIO.h">
       <Filter>Файлы заголовков\View</Filter>
     </ClInclude>
-    <ClInclude Include="TextBoxController.h">
-      <Filter>Файлы заголовков\Model</Filter>
-    </ClInclude>
     <ClInclude Include="TextBox.h">
       <Filter>Файлы заголовков\View</Filter>
     </ClInclude>
@@ -66,6 +63,18 @@
       <Filter>Файлы заголовков\Model</Filter>
     </ClInclude>
     <ClInclude Include="ResultBox.h">
+      <Filter>Файлы заголовков\View</Filter>
+    </ClInclude>
+    <ClInclude Include="Button.h">
+      <Filter>Файлы заголовков\View</Filter>
+    </ClInclude>
+    <ClInclude Include="TextBoxController.h">
+      <Filter>Файлы заголовков\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="ButtonController.h">
+      <Filter>Файлы заголовков\Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawableArray.h">
       <Filter>Файлы заголовков\View</Filter>
     </ClInclude>
   </ItemGroup>

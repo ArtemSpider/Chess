@@ -151,8 +151,11 @@
   <ItemGroup>
     <ClInclude Include="Board.h" />
     <ClInclude Include="Boards.h" />
+    <ClInclude Include="Button.h" />
+    <ClInclude Include="ButtonController.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Coords.h" />
+    <ClInclude Include="DrawableArray.h" />
     <ClInclude Include="GameIO.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Other.h" />

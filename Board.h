@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <cassert>
 
 #include "Coords.h"
@@ -37,13 +38,14 @@ class ChessBoard
 {
 	vector<vector<Piece*> > grid;
 
-	int turnsCount;             // for 50-move rule
+	int turnsWithoutCapture;			// for 50-move rule
+	map<string, int> prevBoards;		// for 3-fold repetition
 	
-	int curMoveInd;				// index of a move on a grid, -1 on the first move
-	vector<PieceMove> moves;	// record of all moves
+	int curMoveInd;						// index of a move on a grid, -1 on the first move
+	vector<PieceMove> moves;			// record of all moves
 
-	PlayerTeam curTurn;			// turn on the board
-	PlayerTeam realTurn;		// turn not considering moveBackwards
+	PlayerTeam curTurn;					// turn on the board
+	PlayerTeam realTurn;				// turn not considering moveBackwards
 	
 	vector<vector<bool> > visibleByWhite;
 	vector<vector<bool> > visibleByBlack;
@@ -275,25 +277,36 @@ class ChessBoard
 
 	GameState CheckDraw() const
 	{
-		if (IsStalemate())
-			return GameState(GameState::State::Draw, "Stalemate");
-		else if (turnsCount == 50)
-			return GameState(GameState::State::Draw, "50-move rule");
-
-
+		auto curHash = prevBoards.find(GetHash())->second;
+		if (curHash == 3)
+			return GameState(GameState::State::Draw, "by repetition");
+		else if (IsStalemate())
+			return GameState(GameState::State::Draw, "by stalemate");
+		else if (turnsWithoutCapture == 50)
+			return GameState(GameState::State::Draw, "by 50-move rule");
 		return GameState();
 	}
 
+	void CheckTimeout()
+	{
+		if (state.state != GameState::State::Game) return;
+
+		if (!withoutTime && GetRemainingTime() <= 0)
+		{
+			state.state = (curTurn == PlayerTeam::White ? GameState::State::BlackWon : GameState::State::WhiteWon);
+			state.reason = "by timeout";
+		}
+	}
 	void UpdateState()
 	{
+		if (state.state != GameState::State::Game) return;
+
 		state = GameState();
 
 		if (IsMate())
 		{
 			state.state = (curTurn == PlayerTeam::White ? GameState::State::BlackWon : GameState::State::WhiteWon);
-			state.reason = "checkmate";
-
-			return;
+			state.reason = "by checkmate";
 		}
 		else state = CheckDraw();
 	}
@@ -317,6 +330,7 @@ class ChessBoard
 			}
 		}
 
+		prevBoards.clear();
 		moves.clear();
 		state = GameState();
 	}
@@ -336,7 +350,8 @@ public:
 		moves(), curTurn(PlayerTeam::White), realTurn(PlayerTeam::White),
 		promoteToWhite(PieceType::Queen), promoteToBlack(PieceType::Queen),
 		withoutTime(false), timeControl(timeControl),
-		remainingTimeWhite(timeControl.time), remainingTimeBlack(timeControl.time)
+		remainingTimeWhite(timeControl.time), remainingTimeBlack(timeControl.time),
+		turnsWithoutCapture(0)
 	{}
 	
 	~ChessBoard()
@@ -348,6 +363,7 @@ public:
 	{
 		Clean();
 		this->grid = grid;
+		prevBoards[GetHash()] = 1;
 
 		Update();
 	}
@@ -455,7 +471,10 @@ public:
 
 			rook->moved = false;
 		}
-		else if (move.type == PieceMove::MoveType::PromotionQueen)
+		else if (move.type == PieceMove::MoveType::PromotionKnight ||
+			move.type == PieceMove::MoveType::PromotionBishop ||
+			move.type == PieceMove::MoveType::PromotionRook ||
+			move.type == PieceMove::MoveType::PromotionQueen)
 		{
 			grid[to.y][to.x] = captured;
 			grid[from.y][from.x] = p;
@@ -517,7 +536,10 @@ public:
 			grid[newPos.y][newPos.x] = rook;
 			grid[to.y][to.x - 2] = nullptr;
 		}
-		else if (move.type == PieceMove::MoveType::PromotionQueen)
+		else if (move.type == PieceMove::MoveType::PromotionKnight || 
+			move.type == PieceMove::MoveType::PromotionBishop ||
+			move.type == PieceMove::MoveType::PromotionRook ||
+			move.type == PieceMove::MoveType::PromotionQueen)
 		{
 			grid[to.y][to.x] = move.promoted;
 			grid[from.y][from.x] = nullptr;
@@ -538,14 +560,7 @@ public:
 		Piece* p = _GetPieceAt(from);
 
 		if (curMoveInd + 1 < moves.size())
-		{
-			withoutTime = true;
-
-			for (size_t i = curMoveInd + 1; i < moves.size(); i++)
-				if (moves[i].promoted != nullptr)
-					delete moves[i].promoted;
-			moves.erase(moves.begin() + (curMoveInd + 1), moves.end());
-		}
+			return;
 
 		moves.emplace_back();
 
@@ -624,12 +639,13 @@ public:
 		if (moves.back().check)
 			moves.back().mate = IsMate();
 
-		UpdateState();
+		turnsWithoutCapture++;
+		if (capture != nullptr || p->GetType() == PieceType::Pawn)
+			turnsWithoutCapture = 0;
 
-		if (capture == nullptr || (p->GetType() != PieceType::Pawn && capture == nullptr))
-			turnsCount++;
-		else
-			turnsCount = 0;
+		prevBoards[GetHash()]++;
+
+		UpdateState();
 	}
 
 	bool IsCheck() const
@@ -664,6 +680,20 @@ public:
 			if (!p.second.empty())
 				return false;
 		return true;
+	}
+
+	bool IsLastMove() const
+	{
+		return curMoveInd + 1 == moves.size();
+	}
+	void ToLastMove()
+	{
+		while (!IsLastMove()) MoveForward();
+	}
+
+	bool WithoutTime() const
+	{
+		return withoutTime;
 	}
 
 	const map<Piece*, vector<Position> >& GetLegalMoves() const
@@ -749,6 +779,7 @@ public:
 			remainingTimeWhite = timeControl.time;
 			remainingTimeBlack = timeControl.time;
 		}
+		CheckTimeout();
 	}
 	void SetRemainingTime(int time)
 	{
@@ -764,6 +795,28 @@ public:
 			remainingTimeWhite = timeControl.time;
 			remainingTimeBlack = timeControl.time;
 		}
+		CheckTimeout();
+	}
+
+	/*
+	* Returns string with size of 32, unique for every board
+	* First 4 bits of i sumbol is grid[i / 8][i % 8], second 4 is grid[i / 8][i % 8 + 1]
+	*/
+	string GetHash() const
+	{
+		string hash;
+		for (int i = 0; i < 64; i += 2)
+		{
+			int x = i / 8, y = i % 8;
+			unsigned char c = 0;
+			if (grid[x][y + 1] != nullptr)
+				c |= ((int)grid[x][y + 1]->GetType() + 1) | (8 * (grid[x][y + 1]->GetTeam() == PlayerTeam::Black));
+			c <<= 4;
+			if (grid[x][y] != nullptr)
+				c |= ((int)grid[x][y]->GetType() + 1) | (8 * (grid[x][y]->GetTeam() == PlayerTeam::Black));
+			hash += c;
+		}
+		return hash;
 	}
 
 	friend class Game;

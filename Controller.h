@@ -8,6 +8,7 @@
 #include "Graphics.h"
 #include "GameIO.h"
 #include "TextBoxController.h"
+#include "ButtonController.h"
 
 
 
@@ -15,7 +16,6 @@ enum class InputState
 {
 	General,		// Input to show previous moves, save/load the game
 	Moves,			// General + Input moves
-	Promotion,		// Input what type pawn promotes to
 	FilePathSave,	// Input path to .board file to save the game
 	FilePathLoad	// Input path to .board file to load the game
 };
@@ -52,6 +52,8 @@ class Game
 
 		graphics.SetRemainingTimeWhite(&board->remainingTimeWhite);
 		graphics.SetRemainingTimeBlack(&board->remainingTimeBlack);
+
+		AssignButtonsActions();
 	}
 	void SaveBoard(string to)
 	{
@@ -63,6 +65,20 @@ class Game
 		{
 			cerr << "File not found" << endl;
 			return;
+		}
+	}
+
+	void AssignButtonsActions()
+	{
+		auto buttons = graphics.GetPromotesToButtons();
+		for (int i = 0; i < buttons.size() / 2; i++)
+		{
+			buttons[i]->pressedAction = [&, i]() {
+				board->promoteToBlack = PieceType((int)PieceType::Knight + i);
+			};
+			buttons[buttons.size() / 2 + i]->pressedAction = [&, i]() {
+				board->promoteToWhite = PieceType((int)PieceType::Knight + i);
+			};
 		}
 	}
 
@@ -82,6 +98,12 @@ class Game
 			{
 				graphics.GetWindow().close();
 				break;
+			}
+
+			{
+				auto buttons = graphics.GetPromotesToButtons();
+				for (auto& b : buttons)
+					ButtonController::CheckEvent(b, event);
 			}
 
 			if (inputState == InputState::General || inputState == InputState::Moves)
@@ -113,24 +135,24 @@ class Game
 			{
 				if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Button::Left)
 				{
-					Position pos = Position(event.mouseButton.x, event.mouseButton.y) / Graphics::SQUARE_SIZE;
-					pos = Position(pos.x, board->SIZE.y - 1 - pos.y);
-
-					if (selectedPiece != nullptr && pos != selectedPiece->GetPosition())
+					if (board->IsLastMove())
 					{
-						const auto& possibleMoves = board->GetLegalMoves(selectedPiece);
-						if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
-							Move(selectedPiece, pos);
-						selectedPiece = nullptr;
+						Position pos = Position(event.mouseButton.x, event.mouseButton.y) / Graphics::SQUARE_SIZE;
+						pos = Position(pos.x, board->SIZE.y - 1 - pos.y);
+
+						if (selectedPiece != nullptr && pos != selectedPiece->GetPosition())
+						{
+							const auto& possibleMoves = board->GetLegalMoves(selectedPiece);
+							if (find(possibleMoves.begin(), possibleMoves.end(), pos) != possibleMoves.end())
+								Move(selectedPiece, pos);
+							selectedPiece = nullptr;
+						}
+
+						if (board->InBounds(pos) && !board->IsEmpty(pos) && board->GetTeam(pos) == board->GetTurn())
+							selectedPiece = board->GetPieceAt(pos);
 					}
-
-					if (board->InBounds(pos) && !board->IsEmpty(pos) && board->GetTeam(pos) == board->GetTurn())
-						selectedPiece = board->GetPieceAt(pos);
+					else board->ToLastMove();
 				}
-			}
-			else if (inputState == InputState::Promotion)
-			{
-
 			}
 			else if (inputState == InputState::FilePathSave || inputState == InputState::FilePathLoad)
 			{
@@ -169,14 +191,10 @@ class Game
 	sf::Clock moveClock;
 	void Update()
 	{
-		static int remMillis = 0;
-		static PlayerTeam lastTurn = PlayerTeam::White;
+		if (board->GetMovesRecord().empty())
+			moveClock.restart();
 
-		if (board->GetTurn() != lastTurn)
-		{
-			remMillis = 0;
-			lastTurn = board->GetTurn();
-		}
+		static int remMillis = 0;
 
 		while (moveClock.getElapsedTime().asMilliseconds() + remMillis >= 1000)
 		{
@@ -201,7 +219,9 @@ public:
 		board(CreateBoard(timeControl)),
 		graphics(board, &selectedPiece, &board->remainingTimeWhite, &board->remainingTimeBlack),
 		inputState(InputState::Moves)
-	{}
+	{
+		AssignButtonsActions();
+	}
 
 	bool Step()
 	{
