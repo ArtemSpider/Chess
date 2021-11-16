@@ -108,6 +108,10 @@ class Game
 
 			if (inputState == InputState::General || inputState == InputState::Moves)
 			{
+				if (event.type == sf::Event::MouseWheelScrolled)
+				{
+					graphics.ChangeNotationOffset(-event.mouseWheelScroll.delta);
+				}
 				if (event.type == sf::Event::KeyPressed)
 				{
 					if (event.key.code == sf::Keyboard::Left)

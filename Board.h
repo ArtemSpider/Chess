@@ -339,6 +339,79 @@ class ChessBoard
 	{
 		return grid[pos.y][pos.x];
 	}
+
+	string GetNotation(PieceMove move)
+	{
+		string res;
+		if (move.type == PieceMove::MoveType::CastleShort)
+			res = "O-O";
+		else if (move.type == PieceMove::MoveType::CastleLong)
+			res = "O-O-O";
+		else if (move.piece->GetType() == PieceType::Pawn)
+		{
+			res = ToNotation(move.to);
+			if (move.captured != nullptr)
+				res = FileToNotation(move.from) + 'x' + res;
+
+			if (move.type == PieceMove::MoveType::PromotionKnight)
+				res = res + "=N";
+			if (move.type == PieceMove::MoveType::PromotionBishop)
+				res = res + "=B";
+			if (move.type == PieceMove::MoveType::PromotionRook)
+				res = res + "=R";
+			if (move.type == PieceMove::MoveType::PromotionQueen)
+				res = res + "=Q";
+		}
+		else
+		{
+			switch (move.piece->GetType())
+			{
+			case PieceType::Knight: res += 'N'; break;
+			case PieceType::Bishop: res += 'B'; break;
+			case PieceType::Rook:   res += 'R'; break;
+			case PieceType::Queen:  res += 'Q'; break;
+			case PieceType::King:   res += 'K'; break;
+			}
+
+			bool ambiguity = false;
+			bool sameFiles = false;
+			bool sameRanks = false;
+
+			for (int i = 0; i < grid.size(); i++)
+				for (int j = 0; j < grid[i].size(); j++)
+					if (grid[i][j] != nullptr && grid[i][j] != move.piece && 
+						grid[i][j]->GetTeam() == move.piece->GetTeam() && 
+						grid[i][j]->GetType() == move.piece->GetType())
+					{
+						const auto& possibleMoves = GetLegalMoves(grid[i][j]);
+						if (find(possibleMoves.begin(), possibleMoves.end(), move.to) != possibleMoves.end())
+						{
+							ambiguity = true;
+							if (i == move.from.y)
+								sameRanks = true;
+							if (j == move.from.x)
+								sameFiles = true;
+						}
+					}
+			if (ambiguity)
+			{
+				if (sameFiles)
+				{
+					if (sameRanks)
+						res += ToNotation(move.from);
+					else
+						res += RankToNotation(move.from);
+				}
+				else
+					res += FileToNotation(move.from);
+			}
+			if (move.captured != nullptr)
+				res += 'x';
+			res += ToNotation(move.to);
+		}
+
+		return res;
+	}
 public:
 	const Size SIZE;
 
@@ -537,9 +610,9 @@ public:
 			grid[to.y][to.x - 2] = nullptr;
 		}
 		else if (move.type == PieceMove::MoveType::PromotionKnight || 
-			move.type == PieceMove::MoveType::PromotionBishop ||
-			move.type == PieceMove::MoveType::PromotionRook ||
-			move.type == PieceMove::MoveType::PromotionQueen)
+				 move.type == PieceMove::MoveType::PromotionBishop ||
+				 move.type == PieceMove::MoveType::PromotionRook ||
+				 move.type == PieceMove::MoveType::PromotionQueen)
 		{
 			grid[to.y][to.x] = move.promoted;
 			grid[from.y][from.x] = nullptr;
@@ -603,12 +676,14 @@ public:
 			moves.back().type = (dir == -1 ? PieceMove::MoveType::CastleLong : PieceMove::MoveType::CastleShort);
 		}
 		else
+		// capture
 		if (!IsEmpty(to))
 		{
 			capture = grid[to.y][to.x];
 			grid[to.y][to.x] = nullptr;
 		}
 		grid[to.y][to.x] = p;
+		moves.back().captured = capture;
 
 		// promotion
 		if (p->GetType() == PieceType::Pawn && (to.y == 0 || to.y == 7))
@@ -622,22 +697,26 @@ public:
 			{
 			case PieceType::Knight: moves.back().type = PieceMove::MoveType::PromotionKnight; break;
 			case PieceType::Bishop: moves.back().type = PieceMove::MoveType::PromotionBishop; break;
-			case PieceType::Rook: moves.back().type = PieceMove::MoveType::PromotionRook; break;
-			case PieceType::Queen: moves.back().type = PieceMove::MoveType::PromotionQueen; break;
+			case PieceType::Rook:   moves.back().type = PieceMove::MoveType::PromotionRook;   break;
+			case PieceType::Queen:  moves.back().type = PieceMove::MoveType::PromotionQueen;  break;
 			}
 		}
+		moves.back().notation = GetNotation(moves.back());
 
 		curTurn = (curTurn == PlayerTeam::White ? PlayerTeam::Black : PlayerTeam::White);
 		realTurn = curTurn;
 		UpdatePieces();
-
-		moves.back().captured = capture;
 
 		UpdateLegalMoves();
 
 		moves.back().check = IsCheck();
 		if (moves.back().check)
 			moves.back().mate = IsMate();
+
+		if (moves.back().mate)
+			moves.back().notation += '#';
+		else if (moves.back().check)
+			moves.back().notation += '+';
 
 		turnsWithoutCapture++;
 		if (capture != nullptr || p->GetType() == PieceType::Pawn)

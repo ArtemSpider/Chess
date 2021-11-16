@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <ostream>
 
 #include "Coords.h"
 #include "Other.h"
@@ -11,7 +13,16 @@ using namespace std;
 
 struct PieceMove
 {
-	PieceMove() : type(), captured(nullptr), check(false), mate(false), movedBefore(false), piece(), from(), to(), promoted(nullptr) {}
+	PieceMove() : 
+		type(), 
+		captured(nullptr), 
+		check(false), mate(false), 
+		movedBefore(false), 
+		piece(), 
+		from(), to(), 
+		promoted(nullptr), 
+		notation()
+	{}
 
 	enum class MoveType
 	{
@@ -33,4 +44,6 @@ struct PieceMove
 	Position from, to;
 
 	Piece* promoted;
+
+	string notation;
 };

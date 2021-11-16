@@ -28,3 +28,30 @@ enum class PieceType
 
 	Count // Must be last
 };
+
+string FileToNotation(int file)
+{
+	return string(1, 'a' + file);
+}
+string FileToNotation(Position pos)
+{
+	return string(1, 'a' + pos.x);
+}
+
+string RankToNotation(int rank)
+{
+	return string(1, '1' + rank);
+}
+string RankToNotation(Position pos)
+{
+	return string(1, '1' + pos.y);
+}
+
+string ToNotation(Position pos)
+{
+	return string(1, 'a' + pos.x) + string(1, '1' + pos.y);
+}
+Position FromNotation(string notation)
+{
+	return Position(notation[0] - 'a', notation[1] - '1');
+}

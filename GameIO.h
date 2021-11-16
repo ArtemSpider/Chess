@@ -9,6 +9,8 @@
 
 class GameIO
 {
+	GameIO() {}
+
 	static string GridToString(ChessBoard* board)
 	{
 		string grid;
@@ -46,20 +48,11 @@ class GameIO
 		return to_string(timeControl.time) + " " + to_string(timeControl.increment);
 	}
 
-	static string ToChessNotation(Position pos)
-	{
-		return string(1, 'a' + pos.x) + string(1, '1' + pos.y);
-	}
-	static Position FromChessNotation(string pos)
-	{
-		return Position(pos[0] - 'a', pos[1] - '1');
-	}
-
 	static string MovesToString(const vector<PieceMove>& moves)
 	{
 		string res;
 		for (const auto& m : moves)
-			res += ToChessNotation(m.from) + ToChessNotation(m.to) + '\n';
+			res += ToNotation(m.from) + ToNotation(m.to) + '\n';
 		return res;
 	}
 public:
@@ -68,7 +61,7 @@ public:
 		ofstream file;
 		file.open(pathToFile);
 		if (!file.good())
-			throw "file not found";
+			throw "File not found";
 		file << TimeControlToString(board->GetTimeControl()) << endl;
 		file << board->GetRemainingTimeFor(PlayerTeam::White) << " " << board->GetRemainingTimeFor(PlayerTeam::Black) << endl;
 		file << MovesToString(board->GetMovesRecord());
@@ -79,7 +72,7 @@ public:
 		ifstream file;
 		file.open(pathToFile);
 		if (!file.good())
-			throw "file not found";
+			throw "File not found";
 
 		TimeControl tc;
 		file >> tc.time >> tc.increment;
@@ -91,8 +84,8 @@ public:
 		string s;
 		while (file >> s)
 		{
-			Position from = FromChessNotation(s.substr(0, 2));
-			Position to = FromChessNotation(s.substr(2, 2));
+			Position from = FromNotation(s.substr(0, 2));
+			Position to = FromNotation(s.substr(2, 2));
 
 			board->MovePiece(from, to);
 		}

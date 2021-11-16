@@ -26,6 +26,8 @@ class Graphics
 	const int* remainingTimeWhite;		// displayed in seconds
 	const int* remainingTimeBlack;		// displayed in seconds
 
+	int notationOffset;					// first displayed move notation index
+
 	/*
 	* buttons for choosing what type piece promotes to
 	* first are white pieces in order of PieceType(except Pawn and King),
@@ -75,12 +77,43 @@ class Graphics
 				window.draw(circle);
 			}
 		}
+
+		for (int i = 0; i < board->SIZE.y; i++)
+		{
+			sf::Text rank;
+			rank.setFillColor(sf::Color::Black);
+			rank.setFont(font);
+			rank.setCharacterSize(32);
+			rank.setPosition(Point<float>(
+				0.f,
+				SQUARE_SIZE.y * i));
+			rank.setString(string(1, '0' + board->SIZE.y - i));
+
+			window.draw(rank);
+		}
+
+		for (int i = 0; i < board->SIZE.x; i++)
+		{
+			sf::Text file;
+			file.setFillColor(sf::Color::Black);
+			file.setFont(font);
+			file.setCharacterSize(32);
+			file.setPosition(Point<float>(
+				SQUARE_SIZE.x * (i + 1),
+				SQUARE_SIZE.y * board->SIZE.y));
+			file.setString(string(1, 'a' + i));
+
+			sf::FloatRect textRect = file.getLocalBounds();
+			file.setOrigin(textRect.left + textRect.width, textRect.top + textRect.height);
+
+			window.draw(file);
+		}
 	}
 
 
 	string TimeToString(int time)
 	{
-		if (time / 3600 >= 1)	// mote then an hour
+		if (time / 3600 >= 1)	// more then an hour
 			return to_string(time / 3600) + ":" + to_string(time % 3600 / 60) + ":" + to_string(time % 60);
 		return to_string(time % 3600 / 60) + ":" + (time % 60 < 10 ? "0" : "") + to_string(time % 60);
 	}
@@ -96,7 +129,7 @@ class Graphics
 				time.setFont(font);
 				time.setCharacterSize(40);
 				time.setPosition(Point<float>(
-					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f,
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 4.f,
 					SQUARE_SIZE.y / 2.f));
 				time.setString(TimeToString(*remainingTimeBlack));
 
@@ -111,7 +144,7 @@ class Graphics
 				time.setFont(font);
 				time.setCharacterSize(40);
 				time.setPosition(Point<float>(
-					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f,
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 4.f,
 					SQUARE_SIZE.y * board->SIZE.y - SQUARE_SIZE.y / 2.f));
 				time.setString(TimeToString(*remainingTimeWhite));
 
@@ -125,17 +158,47 @@ class Graphics
 		for (int i = 0; i < promoteToButtons.size() / 2; i++)
 		{
 			promoteToButtons[i]->setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f + i * 40.f,
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 4.f + i * 40.f,
 				SQUARE_SIZE.y));
 		}
 		for (int i = promoteToButtons.size() / 2; i < promoteToButtons.size(); i++)
 		{
 			promoteToButtons[i]->setPosition(Point<float>(
-				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.y / 4.f + (i - promoteToButtons.size() / 2) * 40.f,
+				SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 4.f + (i - promoteToButtons.size() / 2) * 40.f,
 				SQUARE_SIZE.y * (board->SIZE.y - 1)));
 		}
 		for (auto& b : promoteToButtons)
 			window.draw(*b);
+
+		{
+			const vector<PieceMove>& moves = board->GetMovesRecord();
+
+			sf::Text moveNumber;
+			moveNumber.setFillColor(sf::Color::White);
+			moveNumber.setFont(font);
+			moveNumber.setCharacterSize(24);
+
+			sf::Text notation;
+			notation.setFillColor(sf::Color::White);
+			notation.setFont(font);
+			notation.setCharacterSize(24);
+			for (int i = 0; i + notationOffset < moves.size() && i < 22; i++)
+			{
+				moveNumber.setPosition(Point<float>(
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 3.f + 12,
+					SQUARE_SIZE.y * 1.5f + i * 24));
+				moveNumber.setString(to_string(notationOffset + i + 1) + '.');
+				sf::FloatRect textRect = moveNumber.getLocalBounds();
+				moveNumber.setOrigin(textRect.left + textRect.width, 0.f);
+				window.draw(moveNumber);
+
+				notation.setPosition(Point<float>(
+					SQUARE_SIZE.x * board->SIZE.x + SQUARE_SIZE.x / 3.f + 24,
+					SQUARE_SIZE.y * 1.5f + i * 24));
+				notation.setString(moves[notationOffset + i].notation);
+				window.draw(notation);
+			}
+		}
 	}
 
 
@@ -159,6 +222,7 @@ public:
 		window(sf::VideoMode(Graphics::SQUARE_SIZE.x * board->SIZE.x + 200, Graphics::SQUARE_SIZE.y * board->SIZE.y), "Chess", sf::Style::Titlebar | sf::Style::Close),
 		board(board), selectedPiecePtr(selectedPiece), font(),
 		remainingTimeWhite(remainingTimeWhite), remainingTimeBlack(remainingTimeBlack),
+		notationOffset(0),
 		textBox(nullptr), resultBox(nullptr)
 	{
 		window.setFramerateLimit(60);
@@ -253,6 +317,19 @@ public:
 	void SetRemainingTimeBlack(const int* time)
 	{
 		remainingTimeBlack = time;
+	}
+
+	void SetNotationOffset(int offset)
+	{
+		notationOffset = offset;
+		notationOffset = min((int)board->GetMovesRecord().size() - 1, notationOffset);
+		notationOffset = max(0, notationOffset);
+	}
+	void ChangeNotationOffset(int dOffset)
+	{
+		notationOffset += dOffset;
+		notationOffset = min((int)board->GetMovesRecord().size() - 1, notationOffset);
+		notationOffset = max(0, notationOffset);
 	}
 
 	void AddResultBox(GameState result)
